@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+    <body>
+        <h1>PID Simulator</h1>
+        <p><b>Simulation length</b> (in ticks): <input type="number" id="length" style="width: 5em"></p>
+        <p><b>Ticks per second</b>: <input type="number" id="tps" style="width: 4em"></p>
+        <p><b>Initial signal</b>: <input type="number" id="initSignal" style="width: 3em"></p>
+        <p><b>Signal type</b>: <select name="selector" id="signalType"><option value="0">Position</option><option value="1">Velocity</option></select></p>
+        <p><b>&alpha; to V ratio</b>: <input type="number" id="vCoeff" style="width: 3em"> <i style="font-size:smaller;">(The value by which the voltage [-12 to 12] is multiplied for the simulated angular acceleration output)</i></p>
+        <p><b>Setpoints</b> | Input each setpoint on a new line as the time at which it occurs (in ticks) and signal value separated by a space:</p>
+        <textarea name="Setpoints Input" id="setpoints" rows="7" cols="20" placeholder="50 3&#10;125 5&#10;160 -2&#10;..."></textarea>
+        <table>
+            <tr>
+                <td style="text-align: center;"><p><b><u>P</u>osition</b>:</p></td>
+                <td><p><input type="number" id="kPmin" style="width: 4em" value="0"><input type="range" id="kP" min="0" max="1" value="0.5" step="0.01"><input type="number" id="kPmax" style="width: 4em" value="1"> | <b>Step</b>: <input type="number" id="kPstep" style="width: 4em" value="0.01"> | <b>Current:</b> <input type="number" id="kPcurr" style="width: 4em" value="0.5"></p></td>
+            </tr>
+            <tr>
+                <td style="text-align: center;"><p><b><u>I</u>ntegral</b>:</p></td>
+                <td><p><input type="number" id="kImin" style="width: 4em" value="0"><input type="range" id="kI" min="0" max="1" value="0.5" step="0.01"><input type="number" id="kImax" style="width: 4em" value="1"> | <b>Step</b>: <input type="number" id="kIstep" style="width: 4em" value="0.01"> | <b>Current:</b> <input type="number" id="kIcurr" style="width: 4em" value="0.5"></p></td>
+            </tr>
+            <tr>
+                <td style="text-align: center;"><p>&nbsp;&nbsp;<b><u>D</u>erivative</b>:&nbsp;&nbsp;</p></td>
+                <td><p><input type="number" id="kDmin" style="width: 4em" value="0"><input type="range" id="kD" min="0" max="1" value="0.5" step="0.01"><input type="number" id="kDmax" style="width: 4em" value="1"> | <b>Step</b>: <input type="number" id="kDstep" style="width: 4em" value="0.01"> | <b>Current:</b> <input type="number" id="kDcurr" style="width: 4em" value="0.5"></p></td>
+            </tr>
+        </table>
+        <p><b>Display resolution</b>: <input type="number" id="xRes" style="width: 4em"> px/tick <i>(time axis, horizontal)</i>, <input type="number" id="yRes" style="width: 4em"> px/u <i>(signal axis, vertical)</i></p>
+        <p><b>Vertical viewport bounds</b>: <input type="number" id="yMin" style="width: 4em" placeholder="min"> to <input type="number" id="yMax" style="width: 4em" placeholder="max"></p>
+        <canvas id="simulation"></canvas>
+    </body>
+    <script>
+        const iSimLength = document.getElementById("length");
+        const iTps = document.getElementById("tps");
+        const iInitSignal = document.getElementById("initSignal");
+        const iSignalType = document.getElementById("signalType");
+        const iVCoeff = document.getElementById("vCoeff");
+        const iSetpoints = document.getElementById("setpoints");
+
+        const iKPMin = document.getElementById("kPmin");
+        const iKP = document.getElementById("kP");
+        const iKPMax = document.getElementById("kPmax");
+        const iKPStep = document.getElementById("kPstep");
+        const iKPCurr = document.getElementById("kPcurr");
+
+        const iKIMin = document.getElementById("kImin");
+        const iKI = document.getElementById("kI");
+        const iKIMax = document.getElementById("kImax");
+        const iKIStep = document.getElementById("kIstep");
+        const iKICurr = document.getElementById("kIcurr");
+
+        const iKDMin = document.getElementById("kDmin");
+        const iKD = document.getElementById("kD");
+        const iKDMax = document.getElementById("kDmax");
+        const iKDStep = document.getElementById("kDstep");
+        const iKDCurr = document.getElementById("kDcurr");
+
+        const iXRes = document.getElementById("xRes");
+        const iYRes = document.getElementById("yRes");
+        const iYMin = document.getElementById("yMin");
+        const iYMax = document.getElementById("yMax");
+
+        const oSimulation = document.getElementById("simulation");
+
+        let simLength, tps, initSignal, vCoeff, setpointRaw, xRes, yRes, yMin, yMax;
+        let signalType = 0, kP = 0.5, kI = 0.5, kD = 0.5;
+
+        iSimLength.addEventListener("change", () => {simLength = iSimLength.value;});
+        iTps.addEventListener("change", () => {tps = iTps.value;});
+        iInitSignal.addEventListener("change", () => {initSignal = iInitSignal.value;});
+        iSignalType.addEventListener("change", () => {signalType = parseInt(iSignalType.value);});
+        iVCoeff.addEventListener("change", () => {vCoeff = iVCoeff.value;});
+        iSetpoints.addEventListener("change", () => {setpointRaw = iSetpoints.value;});
+        iXRes.addEventListener("change", () => {xRes = iXRes.value;});
+        iYRes.addEventListener("change", () => {yRes = iYRes.value;});
+        iYMin.addEventListener("change", () => {yMin = iYMin.value;});
+        iYMax.addEventListener("change", () => {yMax = iYMax.value;});
+
+        iKP.addEventListener("change", () => {
+            kP = iKP.value;
+            iKPCurr.value = kP;
+        });
+        iKPCurr.addEventListener("change", () => {
+            kP = iKPCurr.value;
+            iKP.value = kP;
+        });
+        iKI.addEventListener("change", () => {
+            kI = iKI.value;
+            iKICurr.value = kI;
+        });
+        iKICurr.addEventListener("change", () => {
+            kI = iKICurr.value;
+            iKI.value = kI;
+        });
+        iKD.addEventListener("change", () => {
+            kD = iKD.value;
+            iKDCurr.value = kD;
+        });
+        iKDCurr.addEventListener("change", () => {
+            kD = iKDCurr.value;
+            iKD.value = kD;
+        });
+
+        iKPStep.addEventListener("change", () => {
+            iKP.step = iKPStep.value;
+        });
+        iKIStep.addEventListener("change", () => {
+            iKI.step = iKIStep.value;
+        });
+        iKDStep.addEventListener("change", () => {
+            iKD.step = iKDStep.value;
+        });
+
+        iKPMin.addEventListener("change", () => {
+            let temp = iKPMin.value;
+            if (kP < temp) {
+                kP = temp;
+                iKP.value = kP;
+                iKPCurr.value = kP;
+            }
+            iKP.min = temp;
+        });
+        iKPMax.addEventListener("change", () => {
+            let temp = iKPMax.value;
+            if (kP > temp) {
+                kP = temp;
+                iKP.value = kP;
+                iKPCurr.value = kP;
+            }
+            iKP.max = temp;
+        });
+        iKIMin.addEventListener("change", () => {
+            let temp = iKIMin.value;
+            if (kI < temp) {
+                kI = temp;
+                iKI.value = kI;
+                iKICurr.value = kI;
+            }
+            iKI.min = temp;
+        });
+        iKIMax.addEventListener("change", () => {
+            let temp = iKIMax.value;
+            if (kI > temp) {
+                kI = temp;
+                iKI.value = kI;
+                iKICurr.value = kI;
+            }
+            iKI.max = temp;
+        });
+        iKDMin.addEventListener("change", () => {
+            let temp = iKDMin.value;
+            if (kD < temp) {
+                kD = temp;
+                iKD.value = kD;
+                iKDCurr.value = kD;
+            }
+            iKD.min = temp;
+        });
+        iKDMax.addEventListener("change", () => {
+            let temp = iKDMax.value;
+            if (kD > temp) {
+                kD = temp;
+                iKD.value = kD;
+                iKDCurr.value = kD;
+            }
+            iKD.max = temp;
+        });
+        //import Module from "./pid-simulator.js";
+        //Module().then((mod) => {
+        //    
+        //});
+    </script>
+</html>
