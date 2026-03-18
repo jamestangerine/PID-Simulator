@@ -68,7 +68,7 @@
         let simLength, dt, initSignal, maxOutput, vCoeff, setpointRaw, xRes, yRes, yMin, yMax;
         let signalType = 0, kP = 0.5, kI = 0.5, kD = 0.5, autoSubmit = false;
 
-        import Module from "./pid-simulator.js";
+        import Module from "./pidcompute.js";
         Module().then((mod) => {
             function submit() {
                 console.log("Criteria met; calculating");
