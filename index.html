@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
     <body>
-        <h1>PID Simulator</h1>
+        <h1>PID Simulator <span style="font-size:large">v0.1.4</span></h1>
         <p><b>Simulation length</b> (in ticks): <input type="number" id="length" style="width: 5em"></p>
         <p><b>Ticks per second</b>: <input type="number" id="tps" style="width: 4em">
         <p><b>Initial signal</b>: <input type="number" id="initSignal" style="width: 3em"></p>
@@ -92,7 +92,7 @@
                 mod._pid_compute(buf1, initSignal, buf2, outBuf, kP, kI, kD, dt, maxOutput, vCoeff, signalType);
                 let oBufR = outBuf >> 3;
                 let accumulator = "";
-                for (let iter = oBufR; iter < oBufR + bLength; iter++)
+                for (let iter = oBufR; iter < oBufR + simLength; iter++)
                     accumulator += mod.HEAPF64[iter]+" ";
                 console.log(accumulator);
                 mod._free(buf1);
