@@ -73,7 +73,7 @@
             function submit() {
                 console.log("Criteria met; calculating");
                 const separate = setpointRaw.split("\n").map((item) => item.split(" "));
-                const bLength = separate.length + 1;
+                let bLength = separate.length + 1;
                 let buf1 = mod._malloc(bLength << 3);
                 let mBuf1 = buf1 >> 3;
                 mod.HEAPF64[mBuf1] = initSignal;
