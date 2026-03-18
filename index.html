@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
     <body>
-        <h1>PID Simulator <span style="font-size:large">v0.1.4</span></h1>
+        <h1>PID Simulator <span style="font-size:large">v0.1.5</span></h1>
         <p><b>Simulation length</b> (in ticks): <input type="number" id="length" style="width: 5em"></p>
         <p><b>Ticks per second</b>: <input type="number" id="tps" style="width: 4em">
         <p><b>Initial signal</b>: <input type="number" id="initSignal" style="width: 3em"></p>
@@ -82,16 +82,19 @@
                 let mBuf2 = buf2 >> 1;
                 mod.HEAPU16[mBuf2] = simLength;
                 mBuf2++;
+                console.log(initSignal+" "+simLength);
                 bLength--;
                 for (let i = 0; i < bLength; i++) {
                     const currSep = separate[i];
                     mod.HEAPU16[mBuf2 + i] = parseInt(currSep[0]);
                     mod.HEAPF64[mBuf1 + i] = parseFloat(currSep[1]);
+                    console.log(parseInt(currSep[0])+" "+parseFloat(currSep[1]));
                 }
                 let outBuf = mod._malloc(simLength << 3);
                 mod._pid_compute(buf1, initSignal, buf2, outBuf, kP, kI, kD, dt, maxOutput, vCoeff, signalType);
                 let oBufR = outBuf >> 3;
                 let accumulator = "";
+                console.log(oBufR+" "+(oBufR+simLength));
                 for (let iter = oBufR; iter < oBufR + simLength; iter++)
                     accumulator += mod.HEAPF64[iter]+" ";
                 console.log(accumulator);
