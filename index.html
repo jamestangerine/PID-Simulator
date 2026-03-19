@@ -14,7 +14,7 @@
         </style>
     </head>
     <body>
-        <h1>PID Simulator <span style="font-size:large">v0.3.2</span></h1>
+        <h1>PID Simulator <span style="font-size:large">v0.3.3</span></h1>
         <p><b>Simulation length</b> (in ticks): <input type="number" id="length" style="width: 5em" step="20"></p>
         <p><b>Ticks per second</b>: <input type="number" id="tps" style="width: 4em" step="5">
         <p><b>Measurement type</b>: <select name="selector" id="signalType"><option value="0">Position</option><option value="1">Velocity</option></select>
@@ -122,7 +122,7 @@
             function autoSubmitF() {
                 console.log("Submit requested");
                 console.log(simVars);
-                if (simVars.has("simLength") && dt != undefined && simVars.has("initA") && simVars.has("initV") && (simVars.has("initX") || signalType == 1) && simVars.has("maxOutput") && simVars.has("vCoeff") && setpointRaw != undefined && simVars.has("xRes") && simVars.has("yRes") && simVars.has("yMin") && simVars.has("yMax")) submit();
+                if (simVars.has("simLength") && dt != undefined && simVars.has("initV") && (simVars.has("initX") || signalType == 1) && simVars.has("maxOutput") && simVars.has("vCoeff") && setpointRaw != undefined && simVars.has("xRes") && simVars.has("yRes") && simVars.has("yMin") && simVars.has("yMax")) submit();
                 else console.log("Criteria failed");
             }
 
