@@ -14,11 +14,11 @@
         </style>
     </head>
     <body>
-        <h1>PID Simulator <span style="font-size:large">v0.2.0</span></h1>
+        <h1>PID Simulator <span style="font-size:large">v0.3.0</span></h1>
         <p><b>Simulation length</b> (in ticks): <input type="number" id="length" style="width: 5em" step="20"></p>
         <p><b>Ticks per second</b>: <input type="number" id="tps" style="width: 4em" step="5">
-        <p><b>Initial measurement</b>: <input type="number" id="initSignal" style="width: 3em"></p>
         <p><b>Measurement type</b>: <select name="selector" id="signalType"><option value="0">Position</option><option value="1">Velocity</option></select>
+        <p><b>Initial measurements</b>: <b>&alpha;</b>: <input type="number" id="initA" style="width: 3em"> | <b>&omega;</b>: <input type="number" id="initV" style="width: 3em"><span id="positionControl"> | <b>&theta;</b>: <input type="number" id="initX" style="width: 3em"></span></p>
         <p><b>Maximum output</b>: <input type="number" id="maxOutput" style="width: 3em" step="0.1"> <i class="s">(The output of the simulated controller will be multiplied by 12 to obtain voltage; it is thus advised to input a decimal between 0 and 1 unless your battery's voltage is not 12)</i></p>
         <p><b>&alpha; to V ratio</b>: <input type="number" id="vCoeff" style="width: 3em" step="0.1"> <i class="s">(The value by which the voltage will be multiplied to simulate the angular acceleration output. This effectively is a physical conversion factor)</i></p>
         <p><b>Setpoints</b> | Input each setpoint on a new line as the time at which it occurs (in ticks) and signal value separated by a space:</p>
@@ -52,15 +52,17 @@
     </body>
     <script type="module">
         const iTps = document.getElementById("tps");
+        const iSignalType = document.getElementById("signalType");
         const iSetpoints = document.getElementById("setpoints");
 
         const iAutoSubmit = document.getElementById("autoBox");
         const iSubmit = document.getElementById("submit");
+        const oPosArea = document.getElementById("positionControl");
         const oSimulation = document.getElementById("simulation");
 
         let dt, setpointRaw;
+        let signalType = 0;
         let simVars = new Map([
-            ["signalType", 0],
             ["kP", 0.5],
             ["kI", 0.5],
             ["kD", 0.5],
@@ -72,22 +74,35 @@
             ["intZoning", false]
         ]);
 
-        /*import Module from "./pidcompute.js";
-        Module().then((mod) => {*/
+        import Module from "./pidcompute.js";
+        Module().then((mod) => {
             function submit() {
                 console.log("Criteria met; calculating");
-                console.log(simVars);
-                /*const separate = setpointRaw.split("\n").map((item) => item.split(" "));
-                let bLength = separate.length + 1;
-                let buf1 = mod._malloc(bLength << 3);
-                let mBuf1 = buf1 >> 3;
-                mod.HEAPF64[mBuf1] = initSignal;
-                mBuf1++;
-                let buf2 = mod._malloc(bLength << 1);
+                const separate = setpointRaw.split("\n").map((item) => item.split(" "));
+                let bLength;
+                if (signalType == 0) {
+                    bLength = separate.length + 3;
+                    const buf1 = mod._malloc(bLength << 3);
+                    let mBuf1 = buf1 >> 3;
+                    mod.HEAPF64[mBuf1] = simVars.get("initA");
+                    mod.HEAPF64[mBuf1+1] = simVars.get("initV");
+                    mod.HEAPF64[mBuf1+2] = simVars.get("initX");
+                    mBuf1 += 3;
+                    bLength -= 3;
+                } else {
+                    bLength = separate.length + 2;
+                    const buf1 = mod._malloc(bLength << 3);
+                    let mBuf1 = buf1 >> 3;
+                    mod.HEAPF64[mBuf1] = simVars.get("initA");
+                    mod.HEAPF64[mBuf1+1] = simVars.get("initV");
+                    mBuf1 += 2;
+                    bLength -= 2;
+                }
+                const buf2 = mod._malloc(bLength << 1);
                 let mBuf2 = buf2 >> 1;
+                const simLength = simVars.get("simLength");
                 mod.HEAPU16[mBuf2] = simLength;
                 mBuf2++;
-                bLength--;
                 for (let i = 0; i < bLength; i++) {
                     const currSep = separate[i];
                     mod.HEAPU16[mBuf2 + i] = parseInt(currSep[0]);
@@ -95,7 +110,7 @@
                     console.log(parseInt(currSep[0])+" "+parseFloat(currSep[1]));
                 }
                 let outBuf = mod._malloc(simLength << 3);
-                mod._pid_compute(buf1, initSignal, buf2, outBuf, kP, kI, kD, dt, maxOutput, vCoeff, signalType);
+                mod._pid_compute(buf1, buf2, outBuf, simVars.get("kP"), simVars.get("kI"), simVars.get("kD"), dt, simVars.get("maxOutput"), simVars.get("vCoeff"), signalType);
                 let oBufR = outBuf >> 3;
                 let accumulator = "";
                 for (let iter = oBufR; iter < oBufR + bLength; iter++)
@@ -103,25 +118,27 @@
                 console.log(accumulator);
                 mod._free(buf1);
                 mod._free(buf2);
-                mod._free(outBuf);*/
+                mod._free(outBuf);
             }
 
             function autoSubmitF() {
                 console.log("Submit requested");
-                if (simVars.has("simLength") && dt != undefined && simVars.has("initSignal") && simVars.has("maxOutput") && simVars.has("vCoeff") && setpointRaw != undefined && simVars.has("xRes") && simVars.has("yRes") && simVars.has("yMin") && simVars.has("yMax")) submit();
+                console.log(simVars);
+                if (simVars.has("simLength") && dt != undefined && simVars.has("initA") && simVars.has("initV") && (simVars.has("initX") || signalType == 1) && simVars.has("maxOutput") && simVars.has("vCoeff") && setpointRaw != undefined && simVars.has("xRes") && simVars.has("yRes") && simVars.has("yMin") && simVars.has("yMax")) submit();
                 else console.log("Criteria failed");
             }
 
             const intInputs = [
                 ["simLength", document.getElementById("length")],
-                ["signalType", document.getElementById("signalType")],
                 ["xRes", document.getElementById("xRes")],
                 ["yRes", document.getElementById("yRes")]
             ];
             for (let inp of intInputs)
                 inp[1].addEventListener("change", () => {simVars.set(inp[0], parseInt(inp[1].value)); if (simVars.get("autoSubmit")) autoSubmitF();});
             const floatInputs = [
-                ["initSignal", document.getElementById("initSignal")],
+                ["initA", document.getElementById("initA")],
+                ["initV", document.getElementById("initV")],
+                ["initX", document.getElementById("initX")],
                 ["maxOutput", document.getElementById("maxOutput")],
                 ["vCoeff", document.getElementById("vCoeff")],
                 ["yMin", document.getElementById("yMin")],
@@ -132,6 +149,14 @@
 
             iTps.addEventListener("change", () => {dt = 1/parseFloat(iTps.value); if (simVars.get("autoSubmit")) autoSubmitF();});
             iSetpoints.addEventListener("change", () => {setpointRaw = iSetpoints.value; if (simVars.get("autoSubmit")) autoSubmitF();});
+            iSignalType.addEventListener("change", () => {
+                signalType = parseInt(iSignalType.value);
+                if (signalType == 1)
+                    oPosArea.style.display = "none";
+                else
+                    oPosArea.style.display = "inline";
+
+            });
 
             const sliderGroups = [];
             const sliderPrefixes = ["kP", "kI", "kD", "clampL", "clampU", "zone"];
@@ -191,6 +216,6 @@
                 inp[1].addEventListener("change", () => {simVars.set(inp[0], inp[1].checked);});
             
             document.getElementById("submit").addEventListener("click", autoSubmitF);
-        //});
+        });
     </script>
 </html>

@@ -4,18 +4,17 @@
 #include <stdint.h>
 #include <emscripten/emscripten.h>
 
-// Signal buffer format: First value is the initial signal; all following values correspond to indices in the indices buffer
+// Signal buffer format: First values are the initial measurements in the order of a, v, and x (if the PID controller controls position); all following values correspond to indices in the indices buffer
 // Indices buffer format: First value is the total length of the simulation; all following values correspond to values in the indices buffer
 EMSCRIPTEN_KEEPALIVE
-void pid_compute(double* signals, double initialMeasurement, uint16_t* indices, double* output, double kP, double kI, double kD, double dt, double maxOutput, double kVoltage, uint8_t kMeasurement, uint8_t intClamp, double intClampMin, double intClampMax, uint8_t intZone, double intZoneThresh) {
+void pid_compute(double* signals, uint16_t* indices, double* output, double kP, double kI, double kD, double dt, double maxOutput, double kVoltage, uint8_t kMeasurement, uint8_t intClamp, double intClampMin, double intClampMax, uint8_t intZone, double intZoneThresh) {
     const double kdProd = kD/dt;
     const double kiProd = kI*dt;
+    double prevError = 0;
+    double integral = 0;
     if (kMeasurement) {
-        double v = initialMeasurement;
-        double prevError = *signals - v;
-        double integral = prevError;
-        double a = kVoltage*12*(kP*prevError + kiProd*integral);
-        v += a*dt;
+        double a = *(signals++);
+        double v = *signals;
         uint16_t length = *(indices++);
         for (uint16_t current = 0; current < length; current++) {
             if (current == *indices) {
@@ -45,12 +44,9 @@ void pid_compute(double* signals, double initialMeasurement, uint16_t* indices, 
             prevError = error;
         }
     } else {
-        double x = initialMeasurement;
-        double prevError = *signals - x;
-        double integral = prevError;
-        double a = kVoltage*12*(kP*prevError + kiProd*integral);
-        double v = a*dt;
-        x += v*dt;
+        double a = (*signals++);
+        double v = (*signals++);
+        double x = *signals;
         uint16_t length = *(indices++);
         for (uint16_t current = 0; current < length; current++) {
             if (current == *indices) {
