@@ -7,7 +7,7 @@
 // Signal buffer format: First value is the initial signal; all following values correspond to indices in the indices buffer
 // Indices buffer format: First value is the total length of the simulation; all following values correspond to values in the indices buffer
 EMSCRIPTEN_KEEPALIVE
-void pid_compute(double* signals, double initialMeasurement, uint16_t* indices, double* output, double kP, double kI, double kD, double dt, double maxOutput, double kVoltage, uint8_t kMeasurement) {
+void pid_compute(double* signals, double initialMeasurement, uint16_t* indices, double* output, double kP, double kI, double kD, double dt, double maxOutput, double kVoltage, uint8_t kMeasurement, uint8_t intClamp, double intClampMin, double intClampMax, uint8_t intZone, double intZoneThresh) {
     const double kdProd = kD/dt;
     const double kiProd = kI*dt;
     if (kMeasurement) {
@@ -23,8 +23,17 @@ void pid_compute(double* signals, double initialMeasurement, uint16_t* indices, 
                 indices++;
             }
             double error = *signals - v;
-            integral += error;
-            a = (kP*error + kiProd*integral + kdProd*(error-prevError));
+            if (intZone && ((error > 0 && error > intZoneThresh) || (error < 0 && -error > intZoneThresh))) {
+                integral = 0;
+                a = (kP*error + kdProd*(error-prevError));
+            } else {
+                integral += error;
+                if (intClamp) {
+                    double computedITerm = kiProd*integral;
+                    a = kP*error + (computedITerm > intClampMax ? intClampMax : (computedITerm < intClampMin ? intClampMin : computedITerm)) + kdProd*(error-prevError);
+                } else
+                    a = kP*error + kiProd*integral + kdProd*(error-prevError);
+            }
             if (a > maxOutput)
                 a = maxOutput;
             else if (a < -maxOutput)
@@ -49,8 +58,17 @@ void pid_compute(double* signals, double initialMeasurement, uint16_t* indices, 
                 indices++;
             }
             double error = *signals - x;
-            integral += error;
-            a = (kP*error + kiProd*integral + kdProd*(error-prevError));
+            if (intZone && ((error > 0 && error > intZoneThresh) || (error < 0 && -error > intZoneThresh))) {
+                integral = 0;
+                a = (kP*error + kdProd*(error-prevError));
+            } else {
+                integral += error;
+                if (intClamp) {
+                    double computedITerm = kiProd*integral;
+                    a = kP*error + (computedITerm > intClampMax ? intClampMax : (computedITerm < intClampMin ? intClampMin : computedITerm)) + kdProd*(error-prevError);
+                } else
+                    a = kP*error + kiProd*integral + kdProd*(error-prevError);
+            }
             if (a > maxOutput)
                 a = maxOutput;
             else if (a < -maxOutput)

@@ -1,78 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
+    <head>
+        <style>
+            table, tr, td {
+                border: 1px solid
+            }
+            td.l {
+                text-align: center;
+            }
+            i.s {
+                font-size: smaller;
+            }
+        </style>
+    </head>
     <body>
-        <h1>PID Simulator <span style="font-size:large">v0.1.7</span></h1>
-        <p><b>Simulation length</b> (in ticks): <input type="number" id="length" style="width: 5em"></p>
-        <p><b>Ticks per second</b>: <input type="number" id="tps" style="width: 4em">
-        <p><b>Initial signal</b>: <input type="number" id="initSignal" style="width: 3em"></p>
-        <p><b>Signal type</b>: <select name="selector" id="signalType"><option value="0">Position</option><option value="1">Velocity</option></select>
-        <p><b>Maximum output</b>: <input type="number" id="maxOutput" style="width: 3em"> <i style="font-size:smaller;">(The output of the simulated controller will be multiplied by 12 to obtain voltage; it is thus advised to input a decimal between 0 and 1 unless your battery's voltage is not 12)</i></p>
-        <p><b>&alpha; to V ratio</b>: <input type="number" id="vCoeff" style="width: 3em"> <i style="font-size:smaller;">(The value by which the voltage will be multiplied to simulate the angular acceleration output. This effectively is a physical conversion factor)</i></p>
+        <h1>PID Simulator <span style="font-size:large">v0.2.0</span></h1>
+        <p><b>Simulation length</b> (in ticks): <input type="number" id="length" style="width: 5em" step="20"></p>
+        <p><b>Ticks per second</b>: <input type="number" id="tps" style="width: 4em" step="5">
+        <p><b>Initial measurement</b>: <input type="number" id="initSignal" style="width: 3em"></p>
+        <p><b>Measurement type</b>: <select name="selector" id="signalType"><option value="0">Position</option><option value="1">Velocity</option></select>
+        <p><b>Maximum output</b>: <input type="number" id="maxOutput" style="width: 3em" step="0.1"> <i class="s">(The output of the simulated controller will be multiplied by 12 to obtain voltage; it is thus advised to input a decimal between 0 and 1 unless your battery's voltage is not 12)</i></p>
+        <p><b>&alpha; to V ratio</b>: <input type="number" id="vCoeff" style="width: 3em" step="0.1"> <i class="s">(The value by which the voltage will be multiplied to simulate the angular acceleration output. This effectively is a physical conversion factor)</i></p>
         <p><b>Setpoints</b> | Input each setpoint on a new line as the time at which it occurs (in ticks) and signal value separated by a space:</p>
         <textarea name="Setpoints Input" id="setpoints" rows="7" cols="20" placeholder="50 3&#10;125 5&#10;160 -2&#10;..."></textarea>
         <table>
             <tr>
-                <td style="text-align: center;"><p><b><u>P</u>osition</b>:</p></td>
-                <td><p><input type="number" id="kPmin" style="width: 4em" value="0"><input type="range" id="kP" min="0" max="1" value="0.5" step="0.01"><input type="number" id="kPmax" style="width: 4em" value="1"> | <b>Step</b>: <input type="number" id="kPstep" style="width: 4em" value="0.01"> | <b>Current:</b> <input type="number" id="kPcurr" style="width: 4em" value="0.5"></p></td>
+                <td class="l"><p><b><u>P</u>osition</b>:</p></td>
+                <td><p><input type="number" id="kPMin" style="width: 4em" value="0" step="0.01"><input type="range" id="kP" min="0" max="1" value="0.5" step="0.01"><input type="number" id="kPMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="kPStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="kPCurr" style="width: 4em" value="0.5" step="0.01"></p></td>
             </tr>
             <tr>
-                <td style="text-align: center;"><p><b><u>I</u>ntegral</b>:</p></td>
-                <td><p><input type="number" id="kImin" style="width: 4em" value="0"><input type="range" id="kI" min="0" max="1" value="0.5" step="0.01"><input type="number" id="kImax" style="width: 4em" value="1"> | <b>Step</b>: <input type="number" id="kIstep" style="width: 4em" value="0.01"> | <b>Current:</b> <input type="number" id="kIcurr" style="width: 4em" value="0.5"></p></td>
+                <td class="l"><p><b><u>I</u>ntegral</b>:</p></td>
+                <td><p><input type="number" id="kIMin" style="width: 4em" value="0" step="0.01"><input type="range" id="kI" min="0" max="1" value="0.5" step="0.01"><input type="number" id="kIMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="kIStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="kICurr" style="width: 4em" value="0.5" step="0.01"></p></td>
             </tr>
             <tr>
-                <td style="text-align: center;"><p>&nbsp;&nbsp;<b><u>D</u>erivative</b>:&nbsp;&nbsp;</p></td>
-                <td><p><input type="number" id="kDmin" style="width: 4em" value="0"><input type="range" id="kD" min="0" max="1" value="0.5" step="0.01"><input type="number" id="kDmax" style="width: 4em" value="1"> | <b>Step</b>: <input type="number" id="kDstep" style="width: 4em" value="0.01"> | <b>Current:</b> <input type="number" id="kDcurr" style="width: 4em" value="0.5"></p></td>
+                <td class="l"><label><p><input type="checkbox" id="clampEnable"><b>Integral<br>clamp</b>:</p></label></td>
+                <td><p><p><b>Lower bound:</b><br><input type="number" id="clampLMin" style="width: 4em" value="-1" step="0.01"><input type="range" id="clampL" min="-1" max="0" value="-0.5" step="0.01"><input type="number" id="clampLMax" style="width: 4em" value="0" step="0.01"> | <b>Step</b>: <input type="number" id="clampLStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="clampLCurr" style="width: 4em" value="-0.5" step="0.01"></p><p><b>Upper bound:</b><br><input type="number" id="clampUMin" style="width: 4em" value="0" step="0.01"><input type="range" id="clampU" min="0" max="1" value="0.5" step="0.01"><input type="number" id="clampUMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="clampUStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="clampUCurr" style="width: 4em" value="0.5" step="0.01"></p><p><i class="s">(This is based on <a href="https://docs.wpilib.org/en/stable/docs/software/advanced-controls/controllers/pidcontroller.html#setting-a-max-integrator-value" target="_blank" rel="noopener noreferrer">setIntegratorRange() in WPILib</a>)</i></p></td>
+            </tr>
+            <tr>
+                <td class="l"><label><p><input type="checkbox" id="zoneEnable"><b>Integral<br>zone</b>:</p></label></td>
+                <td><p><input type="number" id="zoneMin" style="width: 4em" value="0" step="0.01"><input type="range" id="zone" min="0" max="1" value="0.5" step="0.01"><input type="number" id="zoneMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="zoneStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="zoneCurr" style="width: 4em" value="0.5" step="0.01"></p><p><i class="s">(This is based on <a href="https://docs.wpilib.org/en/stable/docs/software/advanced-controls/controllers/pidcontroller.html#disabling-integral-gain-if-the-error-is-too-high" target="_blank" rel="noopener noreferrer">setIZone() in WPILib</a>)</i></p></td>
+            </tr>
+            <tr>
+                <td class="l"><p>&nbsp;&nbsp;<b><u>D</u>erivative</b>:&nbsp;&nbsp;</p></td>
+                <td><p><input type="number" id="kDMin" style="width: 4em" value="0" step="0.01"><input type="range" id="kD" min="0" max="1" value="0.5" step="0.01"><input type="number" id="kDMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="kDStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="kDCurr" style="width: 4em" value="0.5" step="0.01"></p></td>
             </tr>
         </table>
-        <p><b>Display resolution</b>: <input type="number" id="xRes" style="width: 4em"> px/tick <i>(time axis, horizontal)</i>, <input type="number" id="yRes" style="width: 4em"> px/u <i>(signal axis, vertical)</i></p>
+        <p><b>Display resolution</b>: <input type="number" id="xRes" style="width: 4em"> px/tick <i>(time axis, horizontal)</i>, <input type="number" id="yRes" style="width: 4em" step="50"> px/u <i>(signal axis, vertical)</i></p>
         <p><b>Vertical viewport bounds</b>: <input type="number" id="yMin" style="width: 4em" placeholder="min"> to <input type="number" id="yMax" style="width: 4em" placeholder="max"></p>
         <button id="submit">Submit</button> <label><input type="checkbox" id="autoBox"> Auto-submit changes</label><br>
         <canvas id="simulation"></canvas>
     </body>
     <script type="module">
-        const iSimLength = document.getElementById("length");
         const iTps = document.getElementById("tps");
-        const iInitSignal = document.getElementById("initSignal");
-        const iSignalType = document.getElementById("signalType");
-        const iMaxOutput = document.getElementById("maxOutput");
-        const iVCoeff = document.getElementById("vCoeff");
         const iSetpoints = document.getElementById("setpoints");
 
-        const iKPMin = document.getElementById("kPmin");
-        const iKP = document.getElementById("kP");
-        const iKPMax = document.getElementById("kPmax");
-        const iKPStep = document.getElementById("kPstep");
-        const iKPCurr = document.getElementById("kPcurr");
-
-        const iKIMin = document.getElementById("kImin");
-        const iKI = document.getElementById("kI");
-        const iKIMax = document.getElementById("kImax");
-        const iKIStep = document.getElementById("kIstep");
-        const iKICurr = document.getElementById("kIcurr");
-
-        const iKDMin = document.getElementById("kDmin");
-        const iKD = document.getElementById("kD");
-        const iKDMax = document.getElementById("kDmax");
-        const iKDStep = document.getElementById("kDstep");
-        const iKDCurr = document.getElementById("kDcurr");
-
-        const iXRes = document.getElementById("xRes");
-        const iYRes = document.getElementById("yRes");
-        const iYMin = document.getElementById("yMin");
-        const iYMax = document.getElementById("yMax");
-        
         const iAutoSubmit = document.getElementById("autoBox");
         const iSubmit = document.getElementById("submit");
         const oSimulation = document.getElementById("simulation");
 
-        let simLength, dt, initSignal, maxOutput, vCoeff, setpointRaw, xRes, yRes, yMin, yMax;
-        let signalType = 0, kP = 0.5, kI = 0.5, kD = 0.5, autoSubmit = false;
+        let dt, setpointRaw;
+        let simVars = new Map([
+            ["signalType", 0],
+            ["kP", 0.5],
+            ["kI", 0.5],
+            ["kD", 0.5],
+            ["clampL", -0.5],
+            ["clampU", 0.5],
+            ["zone", 0.5],
+            ["autoSubmit", false],
+            ["intClamping", false],
+            ["intZoning", false]
+        ]);
 
-        import Module from "./pidcompute.js";
-        Module().then((mod) => {
+        /*import Module from "./pidcompute.js";
+        Module().then((mod) => {*/
             function submit() {
                 console.log("Criteria met; calculating");
-                const separate = setpointRaw.split("\n").map((item) => item.split(" "));
+                console.log(simVars);
+                /*const separate = setpointRaw.split("\n").map((item) => item.split(" "));
                 let bLength = separate.length + 1;
                 let buf1 = mod._malloc(bLength << 3);
                 let mBuf1 = buf1 >> 3;
@@ -82,7 +87,6 @@
                 let mBuf2 = buf2 >> 1;
                 mod.HEAPU16[mBuf2] = simLength;
                 mBuf2++;
-                console.log(initSignal+" "+simLength);
                 bLength--;
                 for (let i = 0; i < bLength; i++) {
                     const currSep = separate[i];
@@ -91,137 +95,102 @@
                     console.log(parseInt(currSep[0])+" "+parseFloat(currSep[1]));
                 }
                 let outBuf = mod._malloc(simLength << 3);
-                console.log(simLength << 3+" "+outBuf);
                 mod._pid_compute(buf1, initSignal, buf2, outBuf, kP, kI, kD, dt, maxOutput, vCoeff, signalType);
                 let oBufR = outBuf >> 3;
                 let accumulator = "";
-                console.log(oBufR+" "+(oBufR+simLength)+" "+typeof(oBufR));
-                for (let iter = 0; iter < simLength; iter++)
+                for (let iter = oBufR; iter < oBufR + bLength; iter++)
                     accumulator += mod.HEAPF64[oBufR+iter]+" ";
                 console.log(accumulator);
                 mod._free(buf1);
                 mod._free(buf2);
-                mod._free(outBuf);
+                mod._free(outBuf);*/
             }
 
-            function autoSubmitF() {if (simLength != undefined && dt != undefined && initSignal != undefined && maxOutput != undefined && vCoeff != undefined && setpointRaw != undefined && xRes != undefined && yRes != undefined && yMin != undefined && yMax != undefined) submit();}
+            function autoSubmitF() {
+                console.log("Submit requested");
+                if (simVars.has("simLength") && dt != undefined && simVars.has("initSignal") && simVars.has("maxOutput") && simVars.has("vCoeff") && setpointRaw != undefined && simVars.has("xRes") && simVars.has("yRes") && simVars.has("yMin") && simVars.has("yMax")) submit();
+                else console.log("Criteria failed");
+            }
 
-            iSimLength.addEventListener("change", () => {simLength = iSimLength.value; if (autoSubmit) autoSubmitF();});
-            iTps.addEventListener("change", () => {dt = 1/iTps.value; if (autoSubmit) autoSubmitF();});
-            iInitSignal.addEventListener("change", () => {initSignal = iInitSignal.value; if (autoSubmit) autoSubmitF();});
-            iSignalType.addEventListener("change", () => {signalType = parseInt(iSignalType.value); if (autoSubmit) autoSubmitF();});
-            iMaxOutput.addEventListener("change", () => {maxOutput = iMaxOutput.value; if (autoSubmit) autoSubmitF();});
-            iVCoeff.addEventListener("change", () => {vCoeff = iVCoeff.value; if (autoSubmit) autoSubmitF();});
-            iSetpoints.addEventListener("change", () => {setpointRaw = iSetpoints.value; if (autoSubmit) autoSubmitF();});
-            iXRes.addEventListener("change", () => {xRes = iXRes.value; if (autoSubmit) autoSubmitF();});
-            iYRes.addEventListener("change", () => {yRes = iYRes.value; if (autoSubmit) autoSubmitF();});
-            iYMin.addEventListener("change", () => {yMin = iYMin.value; if (autoSubmit) autoSubmitF();});
-            iYMax.addEventListener("change", () => {yMax = iYMax.value; if (autoSubmit) autoSubmitF();});
+            const intInputs = [
+                ["simLength", document.getElementById("length")],
+                ["signalType", document.getElementById("signalType")],
+                ["xRes", document.getElementById("xRes")],
+                ["yRes", document.getElementById("yRes")]
+            ];
+            for (let inp of intInputs)
+                inp[1].addEventListener("change", () => {simVars.set(inp[0], parseInt(inp[1].value)); if (simVars.get("autoSubmit")) autoSubmitF();});
+            const floatInputs = [
+                ["initSignal", document.getElementById("initSignal")],
+                ["maxOutput", document.getElementById("maxOutput")],
+                ["vCoeff", document.getElementById("vCoeff")],
+                ["yMin", document.getElementById("yMin")],
+                ["yMax", document.getElementById("yMax")]
+            ];
+            for (let inp of floatInputs)
+                inp[1].addEventListener("change", () => {simVars.set(inp[0], parseFloat(inp[1].value)); if (simVars.get("autoSubmit")) autoSubmitF();});
 
-            iKP.addEventListener("change", () => {
-                kP = iKP.value;
-                iKPCurr.value = kP;
-                if (autoSubmit) autoSubmitF();
-            });
-            iKPCurr.addEventListener("change", () => {
-                kP = iKPCurr.value;
-                iKP.value = kP;
-                if (autoSubmit) autoSubmitF();
-            });
-            iKI.addEventListener("change", () => {
-                kI = iKI.value;
-                iKICurr.value = kI;
-                if (autoSubmit) autoSubmitF();
-            });
-            iKICurr.addEventListener("change", () => {
-                kI = iKICurr.value;
-                iKI.value = kI;
-                if (autoSubmit) autoSubmitF();
-            });
-            iKD.addEventListener("change", () => {
-                kD = iKD.value;
-                iKDCurr.value = kD;
-                if (autoSubmit) autoSubmitF();
-            });
-            iKDCurr.addEventListener("change", () => {
-                kD = iKDCurr.value;
-                iKD.value = kD;
-                if (autoSubmit) autoSubmitF();
-            });
+            iTps.addEventListener("change", () => {dt = 1/parseFloat(iTps.value); if (simVars.get("autoSubmit")) autoSubmitF();});
+            iSetpoints.addEventListener("change", () => {setpointRaw = iSetpoints.value; if (simVars.get("autoSubmit")) autoSubmitF();});
 
-            iKPStep.addEventListener("change", () => {
-                iKP.step = iKPStep.value;
-            });
-            iKIStep.addEventListener("change", () => {
-                iKI.step = iKIStep.value;
-            });
-            iKDStep.addEventListener("change", () => {
-                iKD.step = iKDStep.value;
-            });
+            const sliderGroups = [];
+            const sliderPrefixes = ["kP", "kI", "kD", "clampL", "clampU", "zone"];
+            for (let pref of sliderPrefixes) {
+                sliderGroups.push([document.getElementById(pref+"Min"), document.getElementById(pref), document.getElementById(pref+"Max"), document.getElementById(pref+"Step"), document.getElementById(pref+"Curr"), pref]);
+            }
+            for (let group of sliderGroups) {
+                group[1].addEventListener("change", () => {
+                    let tmp = parseFloat(group[1].value);
+                    simVars.set(group[5], tmp);
+                    group[4].value = tmp;
+                    if (simVars.get("autoSubmit")) autoSubmitF();
+                });
+                group[4].addEventListener("change", () => {
+                    let tmp = parseFloat(group[4].value);
+                    simVars.set(group[5], tmp);
+                    group[1].value = tmp;
+                    if (simVars.get("autoSubmit")) autoSubmitF();
+                });
+                group[3].addEventListener("change", () => {
+                    let tmp = parseFloat(group[3].value);
+                    group[1].step = tmp;
+                    group[0].step = tmp;
+                    group[2].step = tmp;
+                    group[4].step = tmp;
+                });
+                group[0].addEventListener("change", () => {
+                    let tmp = parseFloat(group[0].value);
+                    let tmpKx = simVars.get(group[5]);
+                    if (tmpKx < tmp) {
+                        simVars.set(group[5], tmp);
+                        group[1].value = tmp;
+                        group[4].value = tmp;
+                        if (simVars.get("autoSubmit")) autoSubmitF();
+                    }
+                    group[1].min = tmp;
+                });
+                group[2].addEventListener("change", () => {
+                    let tmp = parseFloat(group[2].value);
+                    let tmpKx = simVars.get(group[5]);
+                    if (tmpKx > tmp) {
+                        simVars.set(group[5], tmp);
+                        group[1].value = tmp;
+                        group[4].value = tmp;
+                        if (simVars.get("autoSubmit")) autoSubmitF();
+                    }
+                    group[1].max = tmp;
+                });
+            }
 
-            iKPMin.addEventListener("change", () => {
-                let temp = iKPMin.value;
-                if (kP < temp) {
-                    kP = temp;
-                    iKP.value = kP;
-                    iKPCurr.value = kP;
-                    if (autoSubmit) autoSubmitF();
-                }
-                iKP.min = temp;
-            });
-            iKPMax.addEventListener("change", () => {
-                let temp = iKPMax.value;
-                if (kP > temp) {
-                    kP = temp;
-                    iKP.value = kP;
-                    iKPCurr.value = kP;
-                    if (autoSubmit) autoSubmitF();
-                }
-                iKP.max = temp;
-            });
-            iKIMin.addEventListener("change", () => {
-                let temp = iKIMin.value;
-                if (kI < temp) {
-                    kI = temp;
-                    iKI.value = kI;
-                    iKICurr.value = kI;
-                    if (autoSubmit) autoSubmitF();
-                }
-                iKI.min = temp;
-            });
-            iKIMax.addEventListener("change", () => {
-                let temp = iKIMax.value;
-                if (kI > temp) {
-                    kI = temp;
-                    iKI.value = kI;
-                    iKICurr.value = kI;
-                    if (autoSubmit) autoSubmitF();
-                }
-                iKI.max = temp;
-            });
-            iKDMin.addEventListener("change", () => {
-                let temp = iKDMin.value;
-                if (kD < temp) {
-                    kD = temp;
-                    iKD.value = kD;
-                    iKDCurr.value = kD;
-                    if (autoSubmit) autoSubmitF();
-                }
-                iKD.min = temp;
-            });
-            iKDMax.addEventListener("change", () => {
-                let temp = iKDMax.value;
-                if (kD > temp) {
-                    kD = temp;
-                    iKD.value = kD;
-                    iKDCurr.value = kD;
-                    if (autoSubmit) autoSubmitF();
-                }
-                iKD.max = temp;
-            });
-
-            iAutoSubmit.addEventListener("change", () => {autoSubmit = iAutoSubmit.checked;});
-            iSubmit.addEventListener("click", submit);
-        });
+            const checkboxes = [
+                ["autoSubmit", document.getElementById("autoBox")],
+                ["intClamping", document.getElementById("clampEnable")],
+                ["intZoning", document.getElementById("zoneEnable")]
+            ];
+            for (let inp of checkboxes)
+                inp[1].addEventListener("change", () => {simVars.set(inp[0], inp[1].checked);});
+            
+            document.getElementById("submit").addEventListener("click", autoSubmitF);
+        //});
     </script>
 </html>
