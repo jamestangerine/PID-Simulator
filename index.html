@@ -14,7 +14,7 @@
         </style>
     </head>
     <body>
-        <h1>PID Simulator <span style="font-size:large">v0.3.6</span></h1>
+        <h1>PID Simulator <span style="font-size:large">v0.3.7</span></h1>
         <p><b>Simulation length</b> (in ticks): <input type="number" id="length" style="width: 5em" step="20"></p>
         <p><b>Ticks per second</b>: <input type="number" id="tps" style="width: 4em" step="5">
         <p><b>Measurement type</b>: <select name="selector" id="signalType"><option value="0">Position</option><option value="1">Velocity</option></select>
@@ -96,7 +96,7 @@
                     mod.HEAPF64[mBuf1] = simVars.get("initV");
                     mBuf1++;
                 }
-                const buf2 = mod._malloc(bLength << 1);
+                const buf2 = mod._malloc((bLength + 1) << 1);
                 let mBuf2 = buf2 >> 1;
                 const simLength = simVars.get("simLength");
                 mod.HEAPU16[mBuf2] = simLength;

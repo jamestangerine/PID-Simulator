@@ -44,7 +44,7 @@ void pid_compute(double* signals, uint16_t* indices, double* output, double kP, 
             prevError = error;
         }
     } else {
-        double v = (*signals++);
+        double v = *(signals++);
         double x = *signals;
         uint16_t length = *(indices++);
         for (uint16_t current = 0; current < length; current++) {
