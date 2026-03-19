@@ -12,8 +12,8 @@ void pid_compute(double* signals, uint16_t* indices, double* output, double kP, 
     const double kiProd = kI*dt;
     double prevError = 0;
     double integral = 0;
+    double a;
     if (kMeasurement) {
-        double a = 0;
         double v = *signals;
         uint16_t length = *(indices++);
         for (uint16_t current = 0; current < length; current++) {
@@ -44,7 +44,6 @@ void pid_compute(double* signals, uint16_t* indices, double* output, double kP, 
             prevError = error;
         }
     } else {
-        double a = 0;
         double v = (*signals++);
         double x = *signals;
         uint16_t length = *(indices++);
