@@ -13,7 +13,7 @@ void pid_compute(double* signals, uint16_t* indices, double* output, double kP, 
     double prevError = 0;
     double integral = 0;
     if (kMeasurement) {
-        double a = *(signals++);
+        double a = 0;
         double v = *signals;
         uint16_t length = *(indices++);
         for (uint16_t current = 0; current < length; current++) {
@@ -44,7 +44,7 @@ void pid_compute(double* signals, uint16_t* indices, double* output, double kP, 
             prevError = error;
         }
     } else {
-        double a = (*signals++);
+        double a = 0;
         double v = (*signals++);
         double x = *signals;
         uint16_t length = *(indices++);
