@@ -14,7 +14,7 @@
         </style>
     </head>
     <body>
-        <h1>PID Simulator <span style="font-size:large">v0.3.3</span></h1>
+        <h1>PID Simulator <span style="font-size:large">v0.3.4</span></h1>
         <p><b>Simulation length</b> (in ticks): <input type="number" id="length" style="width: 5em" step="20"></p>
         <p><b>Ticks per second</b>: <input type="number" id="tps" style="width: 4em" step="5">
         <p><b>Measurement type</b>: <select name="selector" id="signalType"><option value="0">Position</option><option value="1">Velocity</option></select>
@@ -108,7 +108,8 @@
                     console.log(parseInt(currSep[0])+" "+parseFloat(currSep[1]));
                 }
                 let outBuf = mod._malloc(simLength << 3);
-                mod._pid_compute(buf1, buf2, outBuf, simVars.get("kP"), simVars.get("kI"), simVars.get("kD"), dt, simVars.get("maxOutput"), simVars.get("vCoeff"), signalType);
+                console.log(buf1, buf2, outBuf, simVars.get("kP"), simVars.get("kI"), simVars.get("kD"), dt, simVars.get("maxOutput"), simVars.get("vCoeff"), signalType, simVars.get("intClamping"), simVars.get("clampL"), simVars.get("clampU"), simVars.get("intZoning"), simVars.get("zone"));
+                mod._pid_compute(buf1, buf2, outBuf, simVars.get("kP"), simVars.get("kI"), simVars.get("kD"), dt, simVars.get("maxOutput"), simVars.get("vCoeff"), signalType, simVars.get("intClamping"), simVars.get("clampL"), simVars.get("clampU"), simVars.get("intZoning"), simVars.get("zone"));
                 let oBufR = outBuf >> 3;
                 let accumulator = "";
                 for (let iter = oBufR; iter < oBufR + simLength; iter++)
