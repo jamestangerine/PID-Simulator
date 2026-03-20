@@ -14,7 +14,7 @@
         </style>
     </head>
     <body>
-        <h1>PID Simulator <span style="font-size:large">v0.4.1</span></h1>
+        <h1>PID Simulator <span style="font-size:large">v0.4.2</span></h1>
         <p><b>Simulation length</b> (in ticks): <input type="number" id="length" style="width: 5em" step="20"></p>
         <p><b>Ticks per second</b>: <input type="number" id="tps" style="width: 4em" step="5">
         <p><b>Measurement type</b>: <select name="selector" id="signalType"><option value="0">Position</option><option value="1">Velocity</option></select>
@@ -45,10 +45,12 @@
                 <td><p><input type="number" id="kDMin" style="width: 4em" value="0" step="0.01"><input type="range" id="kD" min="0" max="1" value="0.5" step="0.01"><input type="number" id="kDMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="kDStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="kDCurr" style="width: 4em" value="0.5" step="0.01"></p></td>
             </tr>
         </table>
-        <p><b>Display resolution</b>: <input type="number" id="xRes" style="width: 4em"> px/tick <i>(time axis, horizontal)</i>, <input type="number" id="yRes" style="width: 4em" step="50"> px/u <i>(signal axis, vertical)</i></p>
+        <p><b>Display resolution</b>: <input type="number" id="xRes" style="width: 4em"> px/tick <i>(time axis, horizontal)</i>, <input type="number" id="yRes" style="width: 4em" step="10"> px/u <i>(signal axis, vertical)</i></p>
         <p><b>Vertical viewport bounds</b>: <input type="number" id="yMin" style="width: 4em" placeholder="min"> to <input type="number" id="yMax" style="width: 4em" placeholder="max"></p>
         <button id="submit">Submit</button> <label><input type="checkbox" id="autoBox"> Auto-submit changes</label><br>
-        <canvas id="simulation"></canvas>
+        <canvas id="simulation" style="background-color: #E0E0E0;"></canvas>
+        <p><b>Raw output</b>:</p>
+        <textarea name="raw" id="rawOutput" rows="10" cols="75" readonly></textarea>
     </body>
     <script type="module">
         const iTps = document.getElementById("tps");
@@ -58,6 +60,7 @@
         const iAutoSubmit = document.getElementById("autoBox");
         const iSubmit = document.getElementById("submit");
         const oPosArea = document.getElementById("positionControl");
+        const oRaw = document.getElementById("rawOutput");
         const oSimulation = document.getElementById("simulation");
 
         let dt, setpointRaw;
@@ -78,22 +81,23 @@
         Module().then((mod) => {
             function submit() {
                 console.log("Criteria met; calculating");
-                const separate = setpointRaw.split("\n").map((item) => item.split(" "));
-                let bLength;
+                const separate = setpointRaw.split("\n").map((item) => { let cDat = item.split(" "); return [parseInt(cDat[0]), parseFloat(cDat[1])]; });
+                let bLength = separate.length;
                 let buf1;
                 let mBuf1;
+                let initSignal;
                 if (signalType == 0) {
-                    bLength = separate.length;
                     buf1 = mod._malloc((bLength + 2) << 3);
                     mBuf1 = buf1 >> 3;
                     mod.HEAPF64[mBuf1] = simVars.get("initV");
-                    mod.HEAPF64[mBuf1+1] = simVars.get("initX");
+                    initSignal = simVars.get("initX");
+                    mod.HEAPF64[mBuf1+1] = initSignal;
                     mBuf1 += 2;
                 } else {
-                    bLength = separate.length;
                     buf1 = mod._malloc((bLength + 1) << 3);
                     mBuf1 = buf1 >> 3;
-                    mod.HEAPF64[mBuf1] = simVars.get("initV");
+                    initSignal = simVars.get("initV");
+                    mod.HEAPF64[mBuf1] = initSignal;
                     mBuf1++;
                 }
                 const buf2 = mod._malloc((bLength + 1) << 1);
@@ -103,25 +107,51 @@
                 mBuf2++;
                 for (let i = 0; i < bLength; i++) {
                     const currSep = separate[i];
-                    mod.HEAPU16[mBuf2 + i] = parseInt(currSep[0]);
-                    mod.HEAPF64[mBuf1 + i] = parseFloat(currSep[1]);
-                    console.log(parseInt(currSep[0])+" "+parseFloat(currSep[1]));
+                    mod.HEAPU16[mBuf2 + i] = currSep[0];
+                    mod.HEAPF64[mBuf1 + i] = currSep[1];
+                    console.log(currSep[0], currSep[1]);
                 }
                 let outBuf = mod._malloc(simLength << 3);
                 let canvOutBuf = mod._malloc(simLength << 3);
                 let yMax = simVars.get("yMax");
                 let yRes = simVars.get("yRes");
                 mod._pid_compute(buf1, buf2, outBuf, canvOutBuf, simVars.get("kP"), simVars.get("kI"), simVars.get("kD"), dt, simVars.get("maxOutput"), simVars.get("vCoeff"), signalType, (simVars.get("intClamping") ? 1 : 0), simVars.get("clampL"), simVars.get("clampU"), (simVars.get("intZoning") ? 1 : 0), simVars.get("zone"), yMax, yRes);
-                let oBufR = outBuf >> 3;
+                let oBufR = (outBuf >> 3) - 1;
                 let accumulator = "";
-                for (let iter = oBufR; iter < oBufR + simLength; iter++)
-                    accumulator += mod.HEAPF64[iter]+" ";
-                console.log(accumulator);
+                for (let iter = 1; iter <= simLength; iter++)
+                    accumulator += iter+": "+mod.HEAPF64[oBufR+iter]+"; ";
+                oRaw.value = accumulator;
+                let xRes = simVars.get("xRes");
+                let canvWidth = simLength * xRes;
+                oSimulation.width = canvWidth;
+                oSimulation.height = (yMax - simVars.get("yMin")) * yRes;
+                let context = oSimulation.getContext("2d");
+                context.beginPath();
+                const currSep = separate[0];
+                let yConst = (yMax-initSignal)*yRes;
+                context.moveTo(0, yConst);
+                let prevX = currSep[0]*xRes;
+                context.lineTo(prevX - xRes, yConst);
+                bLength--;
+                for (let ind = 0; ind < bLength; ind++) {
+                    yConst = (yMax-separate[ind][1])*yRes;
+                    context.lineTo(prevX, yConst);
+                    prevX = separate[ind+1][0]*xRes;
+                    context.lineTo(prevX - xRes, yConst);
+                }
+                yConst = (yMax-separate[bLength][1])*yRes;
+                context.lineTo(prevX, yConst);
+                context.lineTo(canvWidth, yConst);
+                context.stroke();
+                context.beginPath();
                 oBufR = canvOutBuf >> 3;
-                accumulator = "";
-                for (let iter = oBufR; iter < oBufR + simLength; iter++)
-                    accumulator += mod.HEAPF64[iter]+" ";
-                console.log(accumulator);
+                context.moveTo(0, mod.HEAPF64[oBufR]);
+                for (let coord = xRes; coord < canvWidth; coord += xRes) {
+                    oBufR++;
+                    console.log(coord, mod.HEAPF64[oBufR]);
+                    context.lineTo(coord, mod.HEAPF64[oBufR]);
+                }
+                context.stroke();
                 mod._free(buf1);
                 mod._free(buf2);
                 mod._free(outBuf);
@@ -160,7 +190,7 @@
                     oPosArea.style.display = "none";
                 else
                     oPosArea.style.display = "inline";
-
+                if (simVars.get("autoSubmit")) autoSubmitF();
             });
 
             let sliderGroups = [];
@@ -322,12 +352,12 @@
             }
             
             const checkboxes = [
-                ["autoSubmit", document.getElementById("autoBox")],
-                ["intClamping", document.getElementById("clampEnable")],
-                ["intZoning", document.getElementById("zoneEnable")]
+                ["autoSubmit", document.getElementById("autoBox"), false],
+                ["intClamping", document.getElementById("clampEnable"), true],
+                ["intZoning", document.getElementById("zoneEnable"), true]
             ];
             for (let inp of checkboxes)
-                inp[1].addEventListener("change", () => {simVars.set(inp[0], inp[1].checked);});
+                inp[1].addEventListener("change", () => {simVars.set(inp[0], inp[1].checked); if (inp[2] && simVars.get("autoSubmit")) autoSubmitF();});
             const linkBoxes = [ document.getElementById("lAdoptU"), document.getElementById("uAdoptL") ];
             for (let currentGroup = 0; currentGroup < 2; currentGroup++) {
                 let otherGroup = 1-currentGroup;
@@ -348,6 +378,7 @@
                         simVars.set(lsGroups[currentGroup][5], tmpXchg);
                         lsGroups[currentGroup][4].value = tmpXchg;
                         lsGroups[currentGroup][1].value = tmpXchg;
+                        if (simVars.get("autoSubmit")) autoSubmitF();
                     }
                 });
             }
