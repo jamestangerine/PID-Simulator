@@ -14,7 +14,7 @@
         </style>
     </head>
     <body>
-        <h1>PID Simulator <span style="font-size:large">v0.3.7</span></h1>
+        <h1>PID Simulator <span style="font-size:large">v0.4.0</span></h1>
         <p><b>Simulation length</b> (in ticks): <input type="number" id="length" style="width: 5em" step="20"></p>
         <p><b>Ticks per second</b>: <input type="number" id="tps" style="width: 4em" step="5">
         <p><b>Measurement type</b>: <select name="selector" id="signalType"><option value="0">Position</option><option value="1">Velocity</option></select>
@@ -34,7 +34,7 @@
             </tr>
             <tr>
                 <td class="l"><label><p><input type="checkbox" id="clampEnable"><b>Integral<br>clamp</b>:</p></label></td>
-                <td><p><p><b>Lower bound:</b><br><input type="number" id="clampLMin" style="width: 4em" value="-1" step="0.01"><input type="range" id="clampL" min="-1" max="0" value="-0.5" step="0.01"><input type="number" id="clampLMax" style="width: 4em" value="0" step="0.01"> | <b>Step</b>: <input type="number" id="clampLStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="clampLCurr" style="width: 4em" value="-0.5" step="0.01"></p><p><b>Upper bound:</b><br><input type="number" id="clampUMin" style="width: 4em" value="0" step="0.01"><input type="range" id="clampU" min="0" max="1" value="0.5" step="0.01"><input type="number" id="clampUMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="clampUStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="clampUCurr" style="width: 4em" value="0.5" step="0.01"></p><p><i class="s">(This is based on <a href="https://docs.wpilib.org/en/stable/docs/software/advanced-controls/controllers/pidcontroller.html#setting-a-max-integrator-value" target="_blank" rel="noopener noreferrer">setIntegratorRange() in WPILib</a>)</i></p></td>
+                <td><p><p><b>Lower bound</b> | <label>Adopt negative upper bound value <input type="checkbox" id="lAdoptU"></label><br><input type="number" id="clampLMin" style="width: 4em" value="-1" step="0.01"><input type="range" id="clampL" min="-1" max="0" value="-0.5" step="0.01"><input type="number" id="clampLMax" style="width: 4em" value="0" step="0.01"> | <b>Step</b>: <input type="number" id="clampLStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="clampLCurr" style="width: 4em" value="-0.5" step="0.01"></p><p><b>Upper bound:</b> | <label>Adopt negative lower bound value <input type="checkbox" id="uAdoptL"></label><br><input type="number" id="clampUMin" style="width: 4em" value="0" step="0.01"><input type="range" id="clampU" min="0" max="1" value="0.5" step="0.01"><input type="number" id="clampUMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="clampUStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="clampUCurr" style="width: 4em" value="0.5" step="0.01"></p><p><i class="s">(This is based on <a href="https://docs.wpilib.org/en/stable/docs/software/advanced-controls/controllers/pidcontroller.html#setting-a-max-integrator-value" target="_blank" rel="noopener noreferrer">setIntegratorRange() in WPILib</a>)</i></p></td>
             </tr>
             <tr>
                 <td class="l"><label><p><input type="checkbox" id="zoneEnable"><b>Integral<br>zone</b>:</p></label></td>
@@ -61,7 +61,7 @@
         const oSimulation = document.getElementById("simulation");
 
         let dt, setpointRaw;
-        let signalType = 0;
+        let signalType = 0, clampLink = false;
         let simVars = new Map([
             ["kP", 0.5],
             ["kI", 0.5],
@@ -156,11 +156,10 @@
 
             });
 
-            const sliderGroups = [];
-            const sliderPrefixes = ["kP", "kI", "kD", "clampL", "clampU", "zone"];
-            for (let pref of sliderPrefixes) {
+            let sliderGroups = [];
+            const sliderPrefixes = ["kP", "kI", "kD", "zone"];
+            for (let pref of sliderPrefixes)
                 sliderGroups.push([document.getElementById(pref+"Min"), document.getElementById(pref), document.getElementById(pref+"Max"), document.getElementById(pref+"Step"), document.getElementById(pref+"Curr"), pref]);
-            }
             for (let group of sliderGroups) {
                 group[1].addEventListener("change", () => {
                     let tmp = parseFloat(group[1].value);
@@ -205,6 +204,116 @@
                 });
             }
 
+            let lsGroups = [
+                [
+                    document.getElementById("clampLMin"),
+                    document.getElementById("clampL"),
+                    document.getElementById("clampLMax"),
+                    document.getElementById("clampLStep"),
+                    document.getElementById("clampLCurr"),
+                    "clampL"
+                ],
+                [
+                    document.getElementById("clampUMin"),
+                    document.getElementById("clampU"),
+                    document.getElementById("clampUMax"),
+                    document.getElementById("clampUStep"),
+                    document.getElementById("clampUCurr"),
+                    "clampU"
+                ]
+            ];
+            for (let currentGroup = 0; currentGroup < 2; currentGroup++) {
+                let otherGroup = 1-currentGroup;
+                lsGroups[currentGroup][1].addEventListener("change", () => {
+                    let tmp = parseFloat(lsGroups[currentGroup][1].value);
+                    simVars.set(lsGroups[currentGroup][5], tmp);
+                    lsGroups[currentGroup][4].value = tmp;
+                    if (clampLink) {
+                        simVars.set(lsGroups[otherGroup][5], -tmp);
+                        lsGroups[otherGroup][1].value = -tmp;
+                        lsGroups[otherGroup][4].value = -tmp;
+                    }
+                    if (simVars.get("autoSubmit")) autoSubmitF();
+                });
+                lsGroups[currentGroup][4].addEventListener("change", () => {
+                    let tmp = parseFloat(lsGroups[currentGroup][4].value);
+                    simVars.set(lsGroups[currentGroup][5], tmp);
+                    lsGroups[currentGroup][1].value = tmp;
+                    if (clampLink) {
+                        simVars.set(lsGroups[otherGroup][5], -tmp);
+                        lsGroups[otherGroup][4].value = -tmp;
+                        lsGroups[otherGroup][1].value = -tmp;
+                    }
+                    if (simVars.get("autoSubmit")) autoSubmitF();
+                });
+                lsGroups[currentGroup][3].addEventListener("change", () => {
+                    let tmp = parseFloat(lsGroups[currentGroup][3].value);
+                    lsGroups[currentGroup][1].step = tmp;
+                    lsGroups[currentGroup][0].step = tmp;
+                    lsGroups[currentGroup][2].step = tmp;
+                    lsGroups[currentGroup][4].step = tmp;
+                    if (clampLink) {
+                        lsGroups[otherGroup][3].value = tmp;
+                        lsGroups[otherGroup][1].step = tmp;
+                        lsGroups[otherGroup][0].step = tmp;
+                        lsGroups[otherGroup][2].step = tmp;
+                        lsGroups[otherGroup][4].step = tmp;
+                    }
+                });
+                lsGroups[currentGroup][0].addEventListener("change", () => {
+                    let tmp = parseFloat(lsGroups[currentGroup][0].value);
+                    let tmpKx = simVars.get(lsGroups[currentGroup][5]);
+                    if (clampLink) {
+                        if (tmpKx < tmp) {
+                            simVars.set(lsGroups[currentGroup][5], tmp);
+                            simVars.set(lsGroups[otherGroup][5], -tmp);
+                            lsGroups[currentGroup][1].value = tmp;
+                            lsGroups[currentGroup][4].value = tmp;
+                            lsGroups[otherGroup][1].value = -tmp;
+                            lsGroups[otherGroup][4].value = -tmp;
+                            if (simVars.get("autoSubmit")) autoSubmitF();
+                        }
+                        lsGroups[otherGroup][2].value = -tmp;
+                        lsGroups[currentGroup][1].min = tmp;
+                        lsGroups[otherGroup][1].max = -tmp;
+                    } else {
+                        if (tmpKx < tmp) {
+                            simVars.set(lsGroups[currentGroup][5], tmp);
+                            lsGroups[currentGroup][1].value = tmp;
+                            lsGroups[currentGroup][4].value = tmp;
+                            if (simVars.get("autoSubmit")) autoSubmitF();
+                        }
+                        lsGroups[currentGroup][1].min = tmp;
+                    }
+                });
+                lsGroups[currentGroup][2].addEventListener("change", () => {
+                    let tmp = parseFloat(lsGroups[currentGroup][2].value);
+                    let tmpKx = simVars.get(lsGroups[currentGroup][5]);
+                    if (clampLink) {
+                        if (tmpKx > tmp) {
+                            simVars.set(lsGroups[currentGroup][5], tmp);
+                            simVars.set(lsGroups[otherGroup][5], -tmp);
+                            lsGroups[currentGroup][1].value = tmp;
+                            lsGroups[currentGroup][4].value = tmp;
+                            lsGroups[otherGroup][1].value = -tmp;
+                            lsGroups[otherGroup][4].value = -tmp;
+                            if (simVars.get("autoSubmit")) autoSubmitF();
+                        }
+                        lsGroups[otherGroup][0].value = -tmp;
+                        lsGroups[currentGroup][1].max = tmp;
+                        lsGroups[otherGroup][1].min = -tmp;
+                    } else {
+                        if (tmpKx > tmp) {
+                            simVars.set(lsGroups[currentGroup][5], tmp);
+                            lsGroups[currentGroup][1].value = tmp;
+                            lsGroups[currentGroup][4].value = tmp;
+                            if (simVars.get("autoSubmit")) autoSubmitF();
+                        }
+                        lsGroups[currentGroup][1].max = tmp;
+                    }
+                });
+            }
+            
             const checkboxes = [
                 ["autoSubmit", document.getElementById("autoBox")],
                 ["intClamping", document.getElementById("clampEnable")],
@@ -212,6 +321,29 @@
             ];
             for (let inp of checkboxes)
                 inp[1].addEventListener("change", () => {simVars.set(inp[0], inp[1].checked);});
+            const linkBoxes = [ document.getElementById("lAdoptU"), document.getElementById("uAdoptL") ];
+            for (let currentGroup = 0; currentGroup < 2; currentGroup++) {
+                let otherGroup = 1-currentGroup;
+                linkBoxes[currentGroup].addEventListener("change", () => {
+                    clampLink = linkBoxes[currentGroup].checked;
+                    linkBoxes[otherGroup].checked = clampLink;
+                    if (clampLink) {
+                        let tmpXchg = lsGroups[otherGroup][3].value;
+                        lsGroups[currentGroup][3].value = tmpXchg;
+                        lsGroups[currentGroup][1].step = tmpXchg;
+                        tmpXchg = -lsGroups[otherGroup][2].value;
+                        lsGroups[currentGroup][0].value = tmpXchg;
+                        lsGroups[currentGroup][1].min = tmpXchg;
+                        tmpXchg = -lsGroups[otherGroup][0].value;
+                        lsGroups[currentGroup][2].value = tmpXchg;
+                        lsGroups[currentGroup][1].max = tmpXchg;
+                        tmpXchg = -lsGroups[otherGroup][4].value;
+                        simVars.set(lsGroups[currentGroup][5], tmpXchg);
+                        lsGroups[currentGroup][4].value = tmpXchg;
+                        lsGroups[currentGroup][1].value = tmpXchg;
+                    }
+                });
+            }
             
             document.getElementById("submit").addEventListener("click", autoSubmitF);
         });
