@@ -7,7 +7,7 @@
 // Signal buffer format: First values are the initial measurements in the order of a, v, and x (if the PID controller controls position); all following values correspond to indices in the indices buffer
 // Indices buffer format: First value is the total length of the simulation; all following values correspond to values in the indices buffer
 EMSCRIPTEN_KEEPALIVE
-void pid_compute(double* signals, uint16_t* indices, double* output, double kP, double kI, double kD, double dt, double maxOutput, double kVoltage, uint8_t kMeasurement, uint8_t intClamp, double intClampMin, double intClampMax, uint8_t intZone, double intZoneThresh) {
+void pid_compute(double* signals, uint16_t* indices, double* output, double* canvasOutput, double kP, double kI, double kD, double dt, double maxOutput, double kVoltage, uint8_t kMeasurement, uint8_t intClamp, double intClampMin, double intClampMax, uint8_t intZone, double intZoneThresh, double viewMax, double vRes) {
     const double kdProd = kD/dt;
     const double kiProd = kI*dt;
     double prevError = 0;
@@ -39,8 +39,8 @@ void pid_compute(double* signals, uint16_t* indices, double* output, double kP, 
                 a = -maxOutput;
             a *= kVoltage*12;
             v += a*dt;
-            *output = v;
-            output++;
+            *(output++) = v;
+            *(canvasOutput++) = (viewMax-v)*vRes;
             prevError = error;
         }
     } else {
@@ -71,8 +71,8 @@ void pid_compute(double* signals, uint16_t* indices, double* output, double kP, 
             a *= kVoltage*12;
             v += a*dt;
             x += v*dt;
-            *output = x;
-            output++;
+            *(output++) = x;
+            *(canvasOutput++) = (viewMax-x)*vRes;
             prevError = error;
         }
     }
