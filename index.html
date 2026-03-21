@@ -14,7 +14,8 @@
         </style>
     </head>
     <body>
-        <h1>PID Simulator <span style="font-size:large">v0.4.2</span></h1>
+        <h1>PID Simulator <span style="font-size:large">v0.5.0</span></h1>
+        <h2><u>Simulation & Physics Parameters</u></h2>
         <p><b>Simulation length</b> (in ticks): <input type="number" id="length" style="width: 5em" step="20"></p>
         <p><b>Ticks per second</b>: <input type="number" id="tps" style="width: 4em" step="5">
         <p><b>Measurement type</b>: <select name="selector" id="signalType"><option value="0">Position</option><option value="1">Velocity</option></select>
@@ -22,10 +23,12 @@
         <p><b>Maximum output</b>: <input type="number" id="maxOutput" style="width: 3em" step="0.1"> <i class="s">(The output of the simulated controller will be multiplied by 12 to obtain voltage; it is thus advised to input a decimal between 0 and 1 unless your battery's voltage is not 12)</i></p>
         <p><b>&alpha; to V ratio</b>: <input type="number" id="vCoeff" style="width: 3em" step="0.1"> <i class="s">(The value by which the voltage will be multiplied to simulate the angular acceleration output. This effectively is a physical conversion factor)</i></p>
         <p><b>Setpoints</b> | Input each setpoint on a new line as the time at which it occurs (in ticks) and signal value separated by a space:</p>
-        <textarea name="Setpoints Input" id="setpoints" rows="7" cols="20" placeholder="50 3&#10;125 5&#10;160 -2&#10;..."></textarea>
+        <textarea name="Setpoints Input" id="setpoints" rows="7" cols="10" placeholder="50 3&#10;125 5&#10;160 -2&#10;..."></textarea>
+        <hr>
+        <h2><u>PID Coefficients</u></h2>
         <table>
             <tr>
-                <td class="l"><p><b><u>P</u>osition</b>:</p></td>
+                <td class="l"><p><b><u>P</u>roportional</b>:</p></td>
                 <td><p><input type="number" id="kPMin" style="width: 4em" value="0" step="0.01"><input type="range" id="kP" min="0" max="1" value="0.5" step="0.01"><input type="number" id="kPMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="kPStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="kPCurr" style="width: 4em" value="0.5" step="0.01"></p></td>
             </tr>
             <tr>
@@ -45,10 +48,17 @@
                 <td><p><input type="number" id="kDMin" style="width: 4em" value="0" step="0.01"><input type="range" id="kD" min="0" max="1" value="0.5" step="0.01"><input type="number" id="kDMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="kDStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="kDCurr" style="width: 4em" value="0.5" step="0.01"></p></td>
             </tr>
         </table>
-        <p><b>Display resolution</b>: <input type="number" id="xRes" style="width: 4em"> px/tick <i>(time axis, horizontal)</i>, <input type="number" id="yRes" style="width: 4em" step="10"> px/u <i>(signal axis, vertical)</i></p>
+        <hr>
+        <h2><u>Graph Settings</u></h2>
+        <p><b>Display resolution</b>: <input type="number" id="xRes" style="width: 4em"> px/tick <i>(time axis, horizontal)</i>, <input type="number" id="yRes" style="width: 4em" step="10"> px/unit <i>(signal axis, vertical)</i></p>
         <p><b>Vertical viewport bounds</b>: <input type="number" id="yMin" style="width: 4em" placeholder="min"> to <input type="number" id="yMax" style="width: 4em" placeholder="max"></p>
+        <p><b>Vertical gridlines</b>: <input type="number" style="width: 3em" value="1" id="vGridWidth"> px | <b>Center</b>: <input type="number" id="vGridCenter" style="width: 4em" value="0" step="25"> tick(s) | <b>Interval</b>: <input type="number" id="vGridInterval" style="width: 4em" value="50" step="10"> tick(s)</p>
+        <p><b>Horizontal gridlines</b>: <input type="number" style="width: 3em" value="1" id="hGridWidth"> px | <b>Center</b>: <input type="number" id="hGridCenter" style="width: 4em" value="0"> unit(s) | <b>Interval</b>: <input type="number" id="hGridInterval" style="width: 4em" value="1" step="0.1"> unit(s)</p>
+        <p><i class="s">(Every second, fourth, and eighth gridline will be colored successively more darkly, with the center gridlines being the darkest)</i></p>
+        <p><b>Setpoint graph</b>: <input type="color" value="#c0c000" id="setpointCol"> | <input type="number" style="width: 3em" value="1" id="setpointWidth"> px</p>
+        <p><b>Measurement graph</b>: <input type="color" value="#0000ff" id="measurementCol"> | <input type="number" style="width: 3em" value="1" id="measurementWidth"> px</p>
         <button id="submit">Submit</button> <label><input type="checkbox" id="autoBox"> Auto-submit changes</label><br>
-        <canvas id="simulation" style="background-color: #E0E0E0;"></canvas>
+        <p><canvas id="simulation"></canvas></p>
         <p><b>Raw output</b>:</p>
         <textarea name="raw" id="rawOutput" rows="10" cols="75" readonly></textarea>
     </body>
@@ -74,7 +84,17 @@
             ["zone", 0.5],
             ["autoSubmit", false],
             ["intClamping", false],
-            ["intZoning", false]
+            ["intZoning", false],
+            ["setpointWidth", 1],
+            ["measurementWidth", 1],
+            ["setpointCol", "#c0c000"],
+            ["measurementCol", "#0000ff"],
+            ["vGridWidth", 1],
+            ["vGridCenter", 0],
+            ["vGridInterval", 50],
+            ["hGridWidth", 1],
+            ["hGridCenter", 0],
+            ["hGridInterval", 1]
         ]);
 
         import Module from "./pidcompute.js";
@@ -109,23 +129,119 @@
                     const currSep = separate[i];
                     mod.HEAPU16[mBuf2 + i] = currSep[0];
                     mod.HEAPF64[mBuf1 + i] = currSep[1];
-                    console.log(currSep[0], currSep[1]);
                 }
                 let outBuf = mod._malloc(simLength << 3);
                 let canvOutBuf = mod._malloc(simLength << 3);
                 let yMax = simVars.get("yMax");
                 let yRes = simVars.get("yRes");
                 mod._pid_compute(buf1, buf2, outBuf, canvOutBuf, simVars.get("kP"), simVars.get("kI"), simVars.get("kD"), dt, simVars.get("maxOutput"), simVars.get("vCoeff"), signalType, (simVars.get("intClamping") ? 1 : 0), simVars.get("clampL"), simVars.get("clampU"), (simVars.get("intZoning") ? 1 : 0), simVars.get("zone"), yMax, yRes);
+                
                 let oBufR = (outBuf >> 3) - 1;
                 let accumulator = "";
                 for (let iter = 1; iter <= simLength; iter++)
                     accumulator += iter+": "+mod.HEAPF64[oBufR+iter]+"; ";
                 oRaw.value = accumulator;
-                let xRes = simVars.get("xRes");
-                let canvWidth = simLength * xRes;
+
+                const xRes = simVars.get("xRes");
+                const canvWidth = simLength * xRes;
                 oSimulation.width = canvWidth;
-                oSimulation.height = (yMax - simVars.get("yMin")) * yRes;
+                const yMin = simVars.get("yMin");
+                oSimulation.height = (yMax - yMin) * yRes;
+
                 let context = oSimulation.getContext("2d");
+                const canvHeight = (yMax-yMin)*yRes;
+                const xOffset = simVars.get("vGridCenter")*xRes;
+                const vLineProd = xRes*simVars.get("vGridInterval");
+                const vWidth = simVars.get("vGridWidth");
+                context.lineWidth = vWidth;
+                let index = 0;
+                for (let xVal = xOffset + vLineProd; xVal < canvWidth; xVal += vLineProd) {
+                    context.beginPath();
+                    context.moveTo(xVal, 0);
+                    context.lineTo(xVal, canvHeight);
+                    index++;
+                    if ((index & 1) == 0) {
+                        if ((index & 3) == 0) {
+                            if ((index & 7) == 0)
+                                context.strokeStyle = "#808080";
+                            else
+                                context.strokeStyle = "#c0c0c0";
+                        } else
+                            context.strokeStyle = "#e0e0e0";
+                    } else
+                        context.strokeStyle = "#f0f0f0";
+                    context.stroke();
+                }
+                index = 0;
+                for (let xVal = xOffset - vLineProd; xVal >= 0; xVal -= vLineProd) {
+                    context.beginPath();
+                    context.moveTo(xVal, 0);
+                    context.lineTo(xVal, canvHeight);
+                    index++;
+                    if ((index & 1) == 0) {
+                        if ((index & 3) == 0) {
+                            if ((index & 7) == 0)
+                                context.strokeStyle = "#808080";
+                            else
+                                context.strokeStyle = "#c0c0c0";
+                        } else
+                            context.strokeStyle = "#e0e0e0";
+                    } else
+                        context.strokeStyle = "#f0f0f0";
+                    context.stroke();
+                }
+
+                const yOffset = (yMax-simVars.get("hGridCenter"))*yRes;
+                const hLineProd = yRes*simVars.get("hGridInterval");
+                context.lineWidth = simVars.get("hGridWidth");
+                index = 0;
+                for (let yVal = yOffset + hLineProd; yVal < canvHeight; yVal += hLineProd) {
+                    context.beginPath();
+                    context.moveTo(0, yVal);
+                    context.lineTo(canvWidth, yVal);
+                    index++;
+                    if ((index & 1) == 0) {
+                        if ((index & 3) == 0) {
+                            if ((index & 7) == 0)
+                                context.strokeStyle = "#808080";
+                            else
+                                context.strokeStyle = "#c0c0c0";
+                        } else
+                            context.strokeStyle = "#e0e0e0";
+                    } else
+                        context.strokeStyle = "#f0f0f0";
+                    context.stroke();
+                }
+                index = 0;
+                for (let yVal = yOffset - hLineProd; yVal > 0; yVal -= hLineProd) {
+                    context.beginPath();
+                    context.moveTo(0, yVal);
+                    context.lineTo(canvWidth, yVal);
+                    index++;
+                    if ((index & 1) == 0) {
+                        if ((index & 3) == 0) {
+                            if ((index & 7) == 0)
+                                context.strokeStyle = "#808080";
+                            else
+                                context.strokeStyle = "#c0c0c0";
+                        } else
+                            context.strokeStyle = "#e0e0e0";
+                    } else
+                        context.strokeStyle = "#f0f0f0";
+                    context.stroke();
+                }
+
+                context.beginPath();
+                context.moveTo(0, yOffset);
+                context.lineTo(canvWidth, yOffset);
+                context.strokeStyle = "#404040";
+                context.stroke();
+                context.beginPath();
+                context.moveTo(xOffset, 0);
+                context.lineTo(xOffset, canvHeight);
+                context.lineWidth = vWidth;
+                context.stroke();
+                
                 context.beginPath();
                 const currSep = separate[0];
                 let yConst = (yMax-initSignal)*yRes;
@@ -142,16 +258,21 @@
                 yConst = (yMax-separate[bLength][1])*yRes;
                 context.lineTo(prevX, yConst);
                 context.lineTo(canvWidth, yConst);
+                context.lineWidth = simVars.get("setpointWidth");
+                context.strokeStyle = simVars.get("setpointCol");
                 context.stroke();
+
                 context.beginPath();
                 oBufR = canvOutBuf >> 3;
                 context.moveTo(0, mod.HEAPF64[oBufR]);
                 for (let coord = xRes; coord < canvWidth; coord += xRes) {
                     oBufR++;
-                    console.log(coord, mod.HEAPF64[oBufR]);
                     context.lineTo(coord, mod.HEAPF64[oBufR]);
                 }
+                context.lineWidth = simVars.get("measurementWidth");
+                context.strokeStyle = simVars.get("measurementCol");
                 context.stroke();
+
                 mod._free(buf1);
                 mod._free(buf2);
                 mod._free(outBuf);
@@ -177,10 +298,24 @@
                 ["maxOutput", document.getElementById("maxOutput")],
                 ["vCoeff", document.getElementById("vCoeff")],
                 ["yMin", document.getElementById("yMin")],
-                ["yMax", document.getElementById("yMax")]
+                ["yMax", document.getElementById("yMax")],
+                ["setpointWidth", document.getElementById("setpointWidth")],
+                ["measurementWidth", document.getElementById("measurementWidth")],
+                ["vGridWidth", document.getElementById("vGridWidth")],
+                ["vGridCenter", document.getElementById("vGridCenter")],
+                ["vGridInterval", document.getElementById("vGridInterval")],
+                ["hGridWidth", document.getElementById("hGridWidth")],
+                ["hGridCenter", document.getElementById("hGridCenter")],
+                ["hGridInterval", document.getElementById("hGridInterval")]
             ];
             for (let inp of floatInputs)
                 inp[1].addEventListener("change", () => {simVars.set(inp[0], parseFloat(inp[1].value)); if (simVars.get("autoSubmit")) autoSubmitF();});
+            const stringInputs = [
+                ["setpointCol", document.getElementById("setpointCol")],
+                ["measurementCol", document.getElementById("measurementCol")]
+            ];
+            for (let inp of floatInputs)
+                inp[1].addEventListener("change", () => {simVars.set(inp[0], inp[1].value); if (simVars.get("autoSubmit")) autoSubmitF();});
 
             iTps.addEventListener("change", () => {dt = 1/parseFloat(iTps.value); if (simVars.get("autoSubmit")) autoSubmitF();});
             iSetpoints.addEventListener("change", () => {setpointRaw = iSetpoints.value; if (simVars.get("autoSubmit")) autoSubmitF();});
