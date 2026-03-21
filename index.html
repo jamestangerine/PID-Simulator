@@ -14,53 +14,59 @@
         </style>
     </head>
     <body>
-        <h1>PID Simulator <span style="font-size:large">v0.5.0</span></h1>
-        <h2><u>Simulation & Physics Parameters</u></h2>
-        <p><b>Simulation length</b> (in ticks): <input type="number" id="length" style="width: 5em" step="20"></p>
-        <p><b>Ticks per second</b>: <input type="number" id="tps" style="width: 4em" step="5">
-        <p><b>Measurement type</b>: <select name="selector" id="signalType"><option value="0">Position</option><option value="1">Velocity</option></select>
-        <p><b>Initial measurements</b>: <b>&omega;</b>: <input type="number" id="initV" style="width: 3em"><span id="positionControl"> | <b>&theta;</b>: <input type="number" id="initX" style="width: 3em"></span> <i class="s">(Unless a setpoint at 0 ticks is supplied, the initial measurement corresponding to the supplied measurement type will be the initial setpoint)</i></p>
-        <p><b>Maximum output</b>: <input type="number" id="maxOutput" style="width: 3em" step="0.1"> <i class="s">(The output of the simulated controller will be multiplied by 12 to obtain voltage; it is thus advised to input a decimal between 0 and 1 unless your battery's voltage is not 12)</i></p>
-        <p><b>&alpha; to V ratio</b>: <input type="number" id="vCoeff" style="width: 3em" step="0.1"> <i class="s">(The value by which the voltage will be multiplied to simulate the angular acceleration output. This effectively is a physical conversion factor)</i></p>
-        <p><b>Setpoints</b> | Input each setpoint on a new line as the time at which it occurs (in ticks) and signal value separated by a space:</p>
-        <textarea name="Setpoints Input" id="setpoints" rows="7" cols="10" placeholder="50 3&#10;125 5&#10;160 -2&#10;..."></textarea>
+        <h1>PID Simulator <span style="font-size:large">v1.0</span></h1>
+        <h2 id="collapse0"><u>Simulation & Physics Parameters</u><span id="collapseUni0">&#x25BE</span></h2>
+        <section id="collapsible0">
+            <p><b>Simulation length</b> (in ticks): <input type="number" id="length" style="width: 5em" step="20"></p>
+            <p><b>Ticks per second</b>: <input type="number" id="tps" style="width: 4em" step="5">
+            <p><b>Measurement type</b>: <select name="selector" id="signalType"><option value="0">Position</option><option value="1">Velocity</option></select>
+            <p><b>Initial measurements</b>: <b>&omega;</b>: <input type="number" id="initV" style="width: 3em"><span id="positionControl"> | <b>&theta;</b>: <input type="number" id="initX" style="width: 3em"></span> <i class="s">(Unless a setpoint at 0 ticks is supplied, the initial measurement corresponding to the supplied measurement type will be the initial setpoint)</i></p>
+            <p><b>Maximum output</b>: <input type="number" id="maxOutput" style="width: 3em" step="0.1"> <i class="s">(The output of the simulated controller will be multiplied by 12 to obtain voltage; it is thus advised to input a decimal between 0 and 1 unless your battery's voltage is not 12)</i></p>
+            <p><b>&alpha; to V ratio</b>: <input type="number" id="vCoeff" style="width: 3em" step="0.1"> <i class="s">(The value by which the voltage will be multiplied to simulate the angular acceleration output. This effectively is a physical conversion factor)</i></p>
+            <p><b>Setpoints</b> | Input each setpoint on a new line as the time at which it occurs (in ticks) and signal value separated by a space:</p>
+            <textarea name="Setpoints Input" id="setpoints" rows="7" cols="10" placeholder="50 3&#10;125 5&#10;160 -2&#10;..."></textarea>
+        </section>
         <hr>
-        <h2><u>PID Coefficients</u></h2>
-        <table>
-            <tr>
-                <td class="l"><p><b><u>P</u>roportional</b>:</p></td>
-                <td><p><input type="number" id="kPMin" style="width: 4em" value="0" step="0.01"><input type="range" id="kP" min="0" max="1" value="0.5" step="0.01"><input type="number" id="kPMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="kPStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="kPCurr" style="width: 4em" value="0.5" step="0.01"></p></td>
-            </tr>
-            <tr>
-                <td class="l"><p><b><u>I</u>ntegral</b>:</p></td>
-                <td><p><input type="number" id="kIMin" style="width: 4em" value="0" step="0.01"><input type="range" id="kI" min="0" max="1" value="0.5" step="0.01"><input type="number" id="kIMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="kIStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="kICurr" style="width: 4em" value="0.5" step="0.01"></p></td>
-            </tr>
-            <tr>
-                <td class="l"><label><p><input type="checkbox" id="clampEnable"><b>Integral<br>clamp</b>:</p></label></td>
-                <td><p><p><b>Lower bound</b> | <label>Adopt negative upper bound value <input type="checkbox" id="lAdoptU"></label><br><input type="number" id="clampLMin" style="width: 4em" value="-1" step="0.01"><input type="range" id="clampL" min="-1" max="0" value="-0.5" step="0.01"><input type="number" id="clampLMax" style="width: 4em" value="0" step="0.01"> | <b>Step</b>: <input type="number" id="clampLStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="clampLCurr" style="width: 4em" value="-0.5" step="0.01"></p><p><b>Upper bound:</b> | <label>Adopt negative lower bound value <input type="checkbox" id="uAdoptL"></label><br><input type="number" id="clampUMin" style="width: 4em" value="0" step="0.01"><input type="range" id="clampU" min="0" max="1" value="0.5" step="0.01"><input type="number" id="clampUMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="clampUStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="clampUCurr" style="width: 4em" value="0.5" step="0.01"></p><p><i class="s">(This is based on <a href="https://docs.wpilib.org/en/stable/docs/software/advanced-controls/controllers/pidcontroller.html#setting-a-max-integrator-value" target="_blank" rel="noopener noreferrer">setIntegratorRange() in WPILib</a>)</i></p></td>
-            </tr>
-            <tr>
-                <td class="l"><label><p><input type="checkbox" id="zoneEnable"><b>Integral<br>zone</b>:</p></label></td>
-                <td><p><input type="number" id="zoneMin" style="width: 4em" value="0" step="0.01"><input type="range" id="zone" min="0" max="1" value="0.5" step="0.01"><input type="number" id="zoneMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="zoneStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="zoneCurr" style="width: 4em" value="0.5" step="0.01"></p><p><i class="s">(This is based on <a href="https://docs.wpilib.org/en/stable/docs/software/advanced-controls/controllers/pidcontroller.html#disabling-integral-gain-if-the-error-is-too-high" target="_blank" rel="noopener noreferrer">setIZone() in WPILib</a>)</i></p></td>
-            </tr>
-            <tr>
-                <td class="l"><p>&nbsp;&nbsp;<b><u>D</u>erivative</b>:&nbsp;&nbsp;</p></td>
-                <td><p><input type="number" id="kDMin" style="width: 4em" value="0" step="0.01"><input type="range" id="kD" min="0" max="1" value="0.5" step="0.01"><input type="number" id="kDMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="kDStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="kDCurr" style="width: 4em" value="0.5" step="0.01"></p></td>
-            </tr>
-        </table>
+        <h2 id="collapse1"><u>PID Coefficients</u><span id="collapseUni1">&#x25BE</span></h2>
+        <section id="collapsible1">
+            <table>
+                <tr>
+                    <td class="l"><p><b><u>P</u>roportional</b>:</p></td>
+                    <td><p><input type="number" id="kPMin" style="width: 4em" value="0" step="0.01"><input type="range" id="kP" min="0" max="1" value="0.5" step="0.01"><input type="number" id="kPMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="kPStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="kPCurr" style="width: 4em" value="0.5" step="0.01"></p></td>
+                </tr>
+                <tr>
+                    <td class="l"><p><b><u>I</u>ntegral</b>:</p></td>
+                    <td><p><input type="number" id="kIMin" style="width: 4em" value="0" step="0.01"><input type="range" id="kI" min="0" max="1" value="0.5" step="0.01"><input type="number" id="kIMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="kIStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="kICurr" style="width: 4em" value="0.5" step="0.01"></p></td>
+                </tr>
+                <tr>
+                    <td class="l"><label><p><input type="checkbox" id="clampEnable"><b>Integral<br>clamp</b>:</p></label></td>
+                    <td><p><p><b>Lower bound</b> | <label>Adopt negative upper bound value <input type="checkbox" id="lAdoptU"></label><br><input type="number" id="clampLMin" style="width: 4em" value="-1" step="0.01"><input type="range" id="clampL" min="-1" max="0" value="-0.5" step="0.01"><input type="number" id="clampLMax" style="width: 4em" value="0" step="0.01"> | <b>Step</b>: <input type="number" id="clampLStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="clampLCurr" style="width: 4em" value="-0.5" step="0.01"></p><p><b>Upper bound:</b> | <label>Adopt negative lower bound value <input type="checkbox" id="uAdoptL"></label><br><input type="number" id="clampUMin" style="width: 4em" value="0" step="0.01"><input type="range" id="clampU" min="0" max="1" value="0.5" step="0.01"><input type="number" id="clampUMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="clampUStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="clampUCurr" style="width: 4em" value="0.5" step="0.01"></p><p><i class="s">(This is based on <a href="https://docs.wpilib.org/en/stable/docs/software/advanced-controls/controllers/pidcontroller.html#setting-a-max-integrator-value" target="_blank" rel="noopener noreferrer">setIntegratorRange() in WPILib</a>)</i></p></td>
+                </tr>
+                <tr>
+                    <td class="l"><label><p><input type="checkbox" id="zoneEnable"><b>Integral<br>zone</b>:</p></label></td>
+                    <td><p><input type="number" id="zoneMin" style="width: 4em" value="0" step="0.01"><input type="range" id="zone" min="0" max="1" value="0.5" step="0.01"><input type="number" id="zoneMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="zoneStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="zoneCurr" style="width: 4em" value="0.5" step="0.01"></p><p><i class="s">(This is based on <a href="https://docs.wpilib.org/en/stable/docs/software/advanced-controls/controllers/pidcontroller.html#disabling-integral-gain-if-the-error-is-too-high" target="_blank" rel="noopener noreferrer">setIZone() in WPILib</a>)</i></p></td>
+                </tr>
+                <tr>
+                    <td class="l"><p>&nbsp;&nbsp;<b><u>D</u>erivative</b>:&nbsp;&nbsp;</p></td>
+                    <td><p><input type="number" id="kDMin" style="width: 4em" value="0" step="0.01"><input type="range" id="kD" min="0" max="1" value="0.5" step="0.01"><input type="number" id="kDMax" style="width: 4em" value="1" step="0.01"> | <b>Step</b>: <input type="number" id="kDStep" style="width: 4em" value="0.01" step="0.01"> | <b>Current:</b> <input type="number" id="kDCurr" style="width: 4em" value="0.5" step="0.01"></p></td>
+                </tr>
+            </table>
+        </section>
         <hr>
-        <h2><u>Graph Settings</u></h2>
-        <p><b>Display resolution</b>: <input type="number" id="xRes" style="width: 4em"> px/tick <i>(time axis, horizontal)</i>, <input type="number" id="yRes" style="width: 4em" step="10"> px/unit <i>(signal axis, vertical)</i></p>
-        <p><b>Vertical viewport bounds</b>: <input type="number" id="yMin" style="width: 4em" placeholder="min"> to <input type="number" id="yMax" style="width: 4em" placeholder="max"></p>
-        <p><b>Vertical gridlines</b>: <input type="number" style="width: 3em" value="1" id="vGridWidth"> px | <b>Center</b>: <input type="number" id="vGridCenter" style="width: 4em" value="0" step="25"> tick(s) | <b>Interval</b>: <input type="number" id="vGridInterval" style="width: 4em" value="50" step="10"> tick(s)</p>
-        <p><b>Horizontal gridlines</b>: <input type="number" style="width: 3em" value="1" id="hGridWidth"> px | <b>Center</b>: <input type="number" id="hGridCenter" style="width: 4em" value="0"> unit(s) | <b>Interval</b>: <input type="number" id="hGridInterval" style="width: 4em" value="1" step="0.1"> unit(s)</p>
-        <p><i class="s">(Every second, fourth, and eighth gridline will be colored successively more darkly, with the center gridlines being the darkest)</i></p>
-        <p><b>Setpoint graph</b>: <input type="color" value="#c0c000" id="setpointCol"> | <input type="number" style="width: 3em" value="1" id="setpointWidth"> px</p>
-        <p><b>Measurement graph</b>: <input type="color" value="#0000ff" id="measurementCol"> | <input type="number" style="width: 3em" value="1" id="measurementWidth"> px</p>
+        <h2 id="collapse2"><u>Graph Settings</u><span id="collapseUni2">&#x25BE</span></h2>
+        <section id="collapsible2">
+            <p><b>Display resolution</b>: <input type="number" id="xRes" style="width: 4em"> px/tick <i>(time axis, horizontal)</i>, <input type="number" id="yRes" style="width: 4em" step="10"> px/unit <i>(signal axis, vertical)</i></p>
+            <p><b>Vertical viewport bounds</b>: <input type="number" id="yMin" style="width: 4em" placeholder="min"> to <input type="number" id="yMax" style="width: 4em" placeholder="max"></p>
+            <p><b>Vertical gridlines</b>: <input type="number" style="width: 3em" value="1" id="vGridWidth"> px | <b>Center</b>: <input type="number" id="vGridCenter" style="width: 4em" value="0" step="25"> tick(s) | <b>Interval</b>: <input type="number" id="vGridInterval" style="width: 4em" value="50" step="10"> tick(s)</p>
+            <p><b>Horizontal gridlines</b>: <input type="number" style="width: 3em" value="1" id="hGridWidth"> px | <b>Center</b>: <input type="number" id="hGridCenter" style="width: 4em" value="0"> unit(s) | <b>Interval</b>: <input type="number" id="hGridInterval" style="width: 4em" value="1" step="0.1"> unit(s)</p>
+            <p><i class="s">(Every second, fourth, and eighth gridline will be colored successively more darkly, with the center gridlines being the darkest)</i></p>
+            <p><b>Setpoint graph</b>: <input type="color" value="#c0c000" id="setpointCol"> | <input type="number" style="width: 3em" value="1" id="setpointWidth"> px</p>
+            <p><b>Measurement graph</b>: <input type="color" value="#0000ff" id="measurementCol"> | <input type="number" style="width: 3em" value="1" id="measurementWidth"> px</p>
+        </section>
         <button id="submit">Submit</button> <label><input type="checkbox" id="autoBox"> Auto-submit changes</label><br>
-        <p><canvas id="simulation"></canvas></p>
+        <p><canvas id="simulation" width="0" height="0"></canvas></p>
         <p><b>Raw output</b>:</p>
-        <textarea name="raw" id="rawOutput" rows="10" cols="75" readonly></textarea>
+        <p><textarea name="raw" id="rawOutput" rows="10" cols="75" readonly></textarea><br><i class="s">(Each datum is formatted as </i><span style="font-family: monospace; background-color: #e0e0e0;">{tick}: {measurement};</span><i class="s"> and is separated by spaces)</i></p>
     </body>
     <script type="module">
         const iTps = document.getElementById("tps");
@@ -74,7 +80,7 @@
         const oSimulation = document.getElementById("simulation");
 
         let dt, setpointRaw;
-        let signalType = 0, clampLink = false;
+        let signalType = 0, clampLink = false, expanded = [true, true, true];
         let simVars = new Map([
             ["kP", 0.5],
             ["kI", 0.5],
@@ -514,6 +520,22 @@
                         lsGroups[currentGroup][4].value = tmpXchg;
                         lsGroups[currentGroup][1].value = tmpXchg;
                         if (simVars.get("autoSubmit")) autoSubmitF();
+                    }
+                });
+            }
+
+            for (let sec = 0; sec < 3; sec++) {
+                const uni = document.getElementById("collapseUni"+sec);
+                const collapsible = document.getElementById("collapsible"+sec);
+                document.getElementById("collapse"+sec).addEventListener("click", () => {
+                    if (expanded[sec]) {
+                        uni.innerText = "\u25B8";
+                        collapsible.style.display = "none";
+                        expanded[sec] = false;
+                    } else {
+                        uni.innerText = "\u25BE";
+                        collapsible.style.display = "block";
+                        expanded[sec] = true;
                     }
                 });
             }
